@@ -1,0 +1,18 @@
+groups:
+  - name: sentinel_alerts
+    rules:
+      - alert: ServiceHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[1m]) / rate(http_requests_total[1m]) > 0.05
+        for: 15s
+        labels:
+          severity: high
+        annotations:
+          summary: "High HTTP 5xx error rate detected on {{ $labels.instance }}"
+
+      - alert: ServiceUnreachable
+        expr: up == 0
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service target {{ $labels.instance }} is down"
