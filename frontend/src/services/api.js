@@ -45,3 +45,4 @@ export const SentinelAPI = {
     request(`/incidents/${incidentId}/verify`, { method: 'POST' }),
   getAuditLogs: () => request('/audit-logs'),
 };
+

@@ -8,7 +8,7 @@ router = APIRouter(tags=["Remediation"])
 
 
 @router.post("/remediations/{remediation_id}/execute")
-async def execute_remediation(remediation_id: str):
+def execute_remediation(remediation_id: str):
     """Executes an approved or whitelisted automated remediation action."""
     result = incident_manager.execute_remediation(remediation_id)
     if not result:
@@ -29,7 +29,7 @@ async def execute_remediation(remediation_id: str):
 
 
 @router.post("/incidents/{incident_id}/verify", response_model=VerificationResponse)
-async def verify_incident_recovery(incident_id: str):
+def verify_incident_recovery(incident_id: str):
     """Verifies service health recovery following a remediation step."""
     result = incident_manager.verify_recovery(incident_id)
     if not result:
@@ -38,3 +38,4 @@ async def verify_incident_recovery(incident_id: str):
             detail=f"Incident '{incident_id}' not found.",
         )
     return result
+

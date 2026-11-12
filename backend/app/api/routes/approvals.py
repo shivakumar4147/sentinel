@@ -37,3 +37,4 @@ async def reject_remediation(remediation_id: str, request: RejectRequest):
             detail=f"Remediation '{remediation_id}' not found.",
         )
     return result
+

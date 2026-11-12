@@ -11,3 +11,4 @@ This directory contains a sample multi-tier application used to demonstrate Sent
   - `bad-deployment/`: Simulates a broken rollout returning 500 status codes.
   - `database-failure/`: Terminates the database or severs network connectivity.
   - `resource-exhaustion/`: Allocates unbounded memory to simulate OOM conditions.
+

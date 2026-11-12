@@ -23,3 +23,4 @@ async def get_audit_logs():
         for log in raw_logs
     ]
     return AuditLogListResponse(logs=items, total=len(items))
+

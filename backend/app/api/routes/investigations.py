@@ -20,3 +20,4 @@ async def trigger_investigation(incident_id: str):
         "message": "AI investigation completed and safety policy evaluated.",
         "data": result,
     }
+

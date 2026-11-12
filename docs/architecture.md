@@ -70,3 +70,4 @@ Sentinel is an autonomous, safety-bounded on-call incident response platform. It
 - **No Direct Shell or AI Command Execution**: Remediation actions are parameterized enum identifiers (e.g., `restart_container`, `rollback_deployment`), never arbitrary bash commands.
 - **Isolated AI Network Boundary**: Ollama runs in a separate network zone without access to the host's Docker socket or cloud management APIs.
 - **Human Approval Enforcement**: High-risk actions cannot bypass human approval even if suggested with 100% confidence by the AI.
+

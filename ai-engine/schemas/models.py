@@ -25,3 +25,4 @@ class InvestigationResponse(BaseModel):
     recommended_action: str = Field(..., description="Action identifier matching safety whitelist")
     risk_level: str = Field(..., description="Assessed risk: low, medium, or high")
     requires_approval: bool = Field(..., description="Whether action mandates human authorization")
+

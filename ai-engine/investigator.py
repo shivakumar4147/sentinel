@@ -82,3 +82,4 @@ if __name__ == "__main__":
     result = investigator.mock_investigate(sample_incident)
     print("Mock Investigation Output:")
     print(result.model_dump_json(indent=2))
+

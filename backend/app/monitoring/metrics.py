@@ -22,3 +22,4 @@ def format_metrics_for_ai(snapshot: ServiceMetricsSnapshot) -> Dict[str, Any]:
         "memory_mb": round(snapshot.memory_usage_mb, 1),
         "p95_latency_ms": round(snapshot.p95_latency_ms, 1),
     }
+

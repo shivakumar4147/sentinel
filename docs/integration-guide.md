@@ -45,3 +45,4 @@ This guide describes how each independent module integrates with the Sentinel pl
   - High error rate and latency spikes (`bad-deployment`).
   - Memory exhaustion and OOM kills (`resource-exhaustion`).
 - The backend's `app/monitoring/collector.py` queries Prometheus at `http://prometheus:9090` to auto-create incidents.
+

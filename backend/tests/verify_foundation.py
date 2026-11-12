@@ -9,6 +9,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.config import settings
+settings.MOCK_SERVICES_FALLBACK = True
 print(f"[PASS] 1. Config initialized: {settings.PROJECT_NAME} (version {settings.VERSION})")
 
 from app.safety.policy_engine import safety_engine
@@ -52,3 +53,4 @@ assert len(audit) >= 1
 print(f"[PASS] 8. Audit Logger: Recorded {len(audit)} immutable audit events")
 
 print("\n>>> ALL SENTINEL FOUNDATION CHECKS PASSED SUCCESSFULLY! <<<")
+

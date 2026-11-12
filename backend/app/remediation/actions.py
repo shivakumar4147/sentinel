@@ -94,3 +94,4 @@ ACTION_DISPATCH_REGISTRY = {
     "clear_cache": action_clear_cache,
     "isolate_traffic": action_isolate_traffic,
 }
+

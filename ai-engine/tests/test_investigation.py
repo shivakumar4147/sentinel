@@ -18,3 +18,4 @@ def test_mock_investigation():
     assert res.confidence == 0.87
     assert res.recommended_action == "check_database_connectivity"
     assert res.requires_approval is True
+

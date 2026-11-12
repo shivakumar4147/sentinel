@@ -16,3 +16,4 @@ groups:
           severity: critical
         annotations:
           summary: "Service target {{ $labels.instance }} is down"
+

@@ -28,17 +28,39 @@ class PolicyEvaluationResult(BaseModel):
 
 
 class SafetyPolicyEngine:
-    def __init__(self, whitelisted_actions: Optional[List[str]] = None):
+    def __init__(
+        self,
+        whitelisted_actions: Optional[List[str]] = None,
+        allowed_targets: Optional[List[str]] = None,
+    ):
         self.whitelisted_actions = set(whitelisted_actions or settings.WHITELISTED_ACTIONS)
+        self.allowed_targets = set(
+            target.strip().lower() for target in (allowed_targets or settings.ALLOWED_REMEDIATION_TARGETS)
+        )
+
+    def is_target_allowed(self, target_service: str) -> bool:
+        """Checks if a target container/service is on the approved allowlist."""
+        return (target_service or "").strip().lower() in self.allowed_targets
 
     def evaluate(
         self,
-        recommended_action: str,
+        recommended_action: Optional[str],
         target_service: str,
         ai_risk_level: str,
         confidence: float,
     ) -> PolicyEvaluationResult:
         """Evaluates whether an action is permitted and whether it requires human approval."""
+        if not recommended_action or not recommended_action.strip() or recommended_action.strip().lower() in ("none", "null"):
+            return PolicyEvaluationResult(
+                is_allowed=False,
+                action_type="none",
+                target_service=target_service,
+                risk_level=RiskLevel.LOW,
+                requires_approval=False,
+                dry_run=settings.SAFETY_DRY_RUN,
+                rejection_reason="No remediation action specified or required.",
+            )
+
         action_clean = recommended_action.strip()
 
         # Rule 1: Action Whitelist Check
@@ -54,7 +76,21 @@ class SafetyPolicyEngine:
                 rejection_reason=f"Action '{action_clean}' rejected: not present in permitted whitelist.",
             )
 
-        # Rule 2: Compute Deterministic Risk Level
+        # Rule 2: Target Service Allowlist Check
+        target_clean = (target_service or "").strip().lower()
+        if not target_clean or target_clean not in self.allowed_targets:
+            logger.warning("SAFETY VIOLATION: Target service '%s' is not in permitted allowlist", target_service)
+            return PolicyEvaluationResult(
+                is_allowed=False,
+                action_type=action_clean,
+                target_service=target_service,
+                risk_level=RiskLevel.HIGH,
+                requires_approval=True,
+                dry_run=settings.SAFETY_DRY_RUN,
+                rejection_reason=f"Target service '{target_service}' rejected: not present in permitted target allowlist.",
+            )
+
+        # Rule 3: Compute Deterministic Risk Level
         computed_risk = assess_action_risk(
             action_type=action_clean,
             target_service=target_service,
@@ -90,3 +126,4 @@ class SafetyPolicyEngine:
 
 # Global singleton policy engine
 safety_engine = SafetyPolicyEngine()
+

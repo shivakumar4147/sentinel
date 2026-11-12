@@ -50,3 +50,4 @@ def test_critical_service_elevates_risk():
     )
     # Restarting a database target should deterministically elevate to high risk
     assert risk == RiskLevel.HIGH
+

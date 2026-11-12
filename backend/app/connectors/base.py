@@ -29,3 +29,4 @@ class BaseInfrastructureConnector(ABC):
     def check_health(self, service_name: str) -> Dict[str, Any]:
         """Verify the health status of a target service."""
         pass
+
