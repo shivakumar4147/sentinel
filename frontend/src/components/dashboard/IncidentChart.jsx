@@ -9,7 +9,6 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
-import { useSentinel } from '../../context/SentinelContext';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -36,21 +35,16 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export function IncidentChart() {
   const { isDark } = useTheme();
-  const { incidents, timeRange } = useSentinel();
 
-  const activeCount = incidents.filter((i) => i.status !== 'resolved').length;
-  const resolvedCount = incidents.filter((i) => i.status === 'resolved').length;
-
-  // Real-time telemetry curve based on incident registry state
   const chartData = [
-    { time: '12:00', incidentRate: Math.max(15, activeCount * 12), recoveryRate: Math.max(20, resolvedCount * 18) },
-    { time: '13:00', incidentRate: Math.max(20, activeCount * 15), recoveryRate: Math.max(25, resolvedCount * 22) },
-    { time: '14:00', incidentRate: Math.max(35, activeCount * 22), recoveryRate: Math.max(30, resolvedCount * 28) },
-    { time: '15:00', incidentRate: Math.max(25, activeCount * 18), recoveryRate: Math.max(40, resolvedCount * 32) },
-    { time: '16:00', incidentRate: Math.max(50, activeCount * 28), recoveryRate: Math.max(55, resolvedCount * 45) },
-    { time: '17:00', incidentRate: Math.max(40, activeCount * 24), recoveryRate: Math.max(70, resolvedCount * 55) },
-    { time: '18:00', incidentRate: Math.max(30, activeCount * 20), recoveryRate: Math.max(82, resolvedCount * 65) },
-    { time: 'Now', incidentRate: Math.max(18, activeCount * 14), recoveryRate: Math.max(90, resolvedCount * 75) },
+    { time: '12:00', incidentRate: 35, recoveryRate: 20 },
+    { time: '13:00', incidentRate: 28, recoveryRate: 32 },
+    { time: '14:00', incidentRate: 65, recoveryRate: 40 },
+    { time: '15:00', incidentRate: 38, recoveryRate: 25 },
+    { time: '16:00', incidentRate: 85, recoveryRate: 62 },
+    { time: '17:00', incidentRate: 48, recoveryRate: 78 },
+    { time: '18:00', incidentRate: 62, recoveryRate: 50 },
+    { time: '19:00', incidentRate: 55, recoveryRate: 88 },
   ];
 
   return (

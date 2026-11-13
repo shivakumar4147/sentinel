@@ -2,48 +2,47 @@ import React, { useState } from 'react';
 import { Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import { useSentinel } from '../../context/SentinelContext';
 
 export function ClusterTelemetryRow() {
   const { isDark } = useTheme();
-  const { services, incidents } = useSentinel();
-  const [activeCardId, setActiveCardId] = useState(null);
+  const [activeCardId, setActiveCardId] = useState('db-pool');
   const [hoveredCardId, setHoveredCardId] = useState(null);
   const [hoveredBar, setHoveredBar] = useState(null);
 
-  // Dynamic telemetry cards directly calculated from monitored services
-  const cards = services.slice(0, 4).map((s, idx) => {
-    const mem = Math.round(s.memory_usage || 0);
-    const cpu = Math.round(s.cpu_usage || 0);
-    const err = s.error_rate || 0;
-
-    // Realistic sparkline generated from actual service load
-    const bars = [
-      Math.max(15, Math.round(mem * 0.45)),
-      Math.max(18, Math.round(mem * 0.55)),
-      Math.max(20, Math.round(mem * 0.7)),
-      Math.max(25, Math.round(mem * 0.65)),
-      Math.max(30, Math.round(mem * 0.8)),
-      Math.max(35, Math.round(mem * 0.88)),
-      Math.max(40, Math.round(mem * 0.82)),
-      Math.max(45, Math.round(mem * 0.94)),
-      mem,
-    ];
-
-    return {
-      id: s.id || s.name || `svc-${idx}`,
-      title: s.displayName || s.name,
-      value: `${mem}%`,
-      subtitle: `${s.replicas || 'Active'} • CPU ${cpu}% • Err ${err}%`,
-      bars,
-      timestamps: ['-40m', '-35m', '-30m', '-25m', '-20m', '-15m', '-10m', '-5m', 'Now'],
-    };
-  });
-
-  const firstActiveIncident = incidents.find((i) => i.status !== 'resolved');
-  const inspectUrl = firstActiveIncident
-    ? `/investigation?id=${firstActiveIncident.incident_id}`
-    : '/incidents';
+  const cards = [
+    {
+      id: 'db-pool',
+      title: 'DB Pool Saturation',
+      value: '99.4%',
+      subtitle: '198 / 200 slots in use',
+      bars: [30, 45, 60, 50, 75, 88, 100, 95, 99],
+      timestamps: ['15:30', '15:45', '16:00', '16:15', '16:30', '16:45', '17:00', '17:15', '17:30'],
+    },
+    {
+      id: 'worker-heap',
+      title: 'Worker Heap Memory',
+      value: '82%',
+      subtitle: '840 MB of 1024 MB',
+      bars: [25, 30, 40, 48, 55, 68, 74, 80, 82],
+      timestamps: ['15:30', '15:45', '16:00', '16:15', '16:30', '16:45', '17:00', '17:15', '17:30'],
+    },
+    {
+      id: 'gateway-err',
+      title: 'Gateway Error Rate',
+      value: '14.8%',
+      subtitle: 'Elevated 504 timeouts',
+      bars: [5, 8, 12, 10, 20, 35, 50, 70, 65],
+      timestamps: ['15:30', '15:45', '16:00', '16:15', '16:30', '16:45', '17:00', '17:15', '17:30'],
+    },
+    {
+      id: 'auth-resp',
+      title: 'Auth Response Time',
+      value: '1.4ms',
+      subtitle: 'P99 SLA nominal',
+      bars: [15, 14, 16, 15, 14, 15, 14, 14, 14],
+      timestamps: ['15:30', '15:45', '16:00', '16:15', '16:30', '16:45', '17:00', '17:15', '17:30'],
+    },
+  ];
 
   return (
     <div className="space-y-3">
@@ -53,7 +52,7 @@ export function ClusterTelemetryRow() {
           Cluster Health & Anomaly Rates
         </h2>
         <Link
-          to={inspectUrl}
+          to="/investigation?id=INC-8492"
           className="text-xs font-bold text-[#2563EB] dark:text-[#60A5FA] hover:opacity-80 tracking-wider uppercase transition-opacity"
         >
           INSPECT DIAGNOSTICS
