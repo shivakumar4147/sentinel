@@ -72,5 +72,25 @@ describe('SentinelAPI Client (Member 2)', () => {
     const inc = await SentinelAPI.getIncident('INC-8492');
     expect(inc.status).toBe('resolved');
   });
+
+  it('rejects remediation with suggestion and marks status suggestion_approved', async () => {
+    const res = await SentinelAPI.rejectRemediation(
+      'REM-301',
+      'Rejected with suggestion: Warm redis cache first',
+      'operator-bob',
+      'Warm redis cache first'
+    );
+    expect(res.success).toBe(true);
+    expect(res.remediation.status).toBe('suggestion_approved');
+    expect(res.remediation.suggestion).toBe('Warm redis cache first');
+    expect(res.remediation.operator).toBe('operator-bob');
+
+    const logs = await SentinelAPI.getAuditLogs();
+    const suggestionLog = logs.logs.find(
+      (l) => l.action === 'suggestion_approved' && l.actor === 'operator-bob'
+    );
+    expect(suggestionLog).toBeDefined();
+    expect(suggestionLog.details.suggestion).toBe('Warm redis cache first');
+  });
 });
 

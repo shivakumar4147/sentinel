@@ -41,6 +41,8 @@ export function RemediationPage() {
         return <Badge variant="awaiting_approval" size="xs">Awaiting Sign-off</Badge>;
       case 'rejected':
         return <Badge variant="rejected" size="xs">Rejected</Badge>;
+      case 'suggestion_approved':
+        return <Badge variant="suggestion_approved" size="xs">Suggestion Approved</Badge>;
       case 'rolled_back':
         return <Badge variant="warning" size="xs">Rolled Back</Badge>;
       default:
@@ -134,6 +136,12 @@ export function RemediationPage() {
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-4xl">
                   {rem.reason}
                 </p>
+                {rem.suggestion && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-purple-50/60 dark:bg-[#0D1424] border border-purple-200/60 dark:border-slate-800 text-xs text-purple-900 dark:text-purple-300">
+                    <strong className="font-semibold text-[#6344F5] dark:text-[#A78BFA]">Operator Suggestion: </strong>
+                    <span className="font-mono text-slate-700 dark:text-slate-300">{rem.suggestion}</span>
+                  </div>
+                )}
               </div>
 
               {/* Execution Steps Timeline */}

@@ -11,6 +11,10 @@ import {
   Clock,
   ArrowRight,
   Terminal,
+  HelpCircle,
+  Check,
+  X,
+  MessageSquare,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -28,7 +32,8 @@ export function ApprovalsPage() {
   const [rejectModal, setRejectModal] = useState({
     isOpen: false,
     remediation: null,
-    reason: '',
+    hasSuggestion: null, // null | 'yes' | 'no'
+    suggestion: '',
     operator: 'oncall-operator',
     isSubmitting: false,
   });
@@ -70,7 +75,8 @@ export function ApprovalsPage() {
     setRejectModal({
       isOpen: true,
       remediation: rem,
-      reason: 'Requires further manual telemetry validation by database administrator.',
+      hasSuggestion: null,
+      suggestion: '',
       operator: 'oncall-operator',
       isSubmitting: false,
     });
@@ -78,14 +84,31 @@ export function ApprovalsPage() {
 
   const handleRejectConfirm = async () => {
     if (!rejectModal.remediation) return;
+    if (rejectModal.hasSuggestion === 'yes' && !rejectModal.suggestion.trim()) {
+      return;
+    }
     setRejectModal((prev) => ({ ...prev, isSubmitting: true }));
+
+    const hasSug = rejectModal.hasSuggestion === 'yes' && rejectModal.suggestion.trim().length > 0;
+    const finalReason = hasSug
+      ? `Rejected with suggestion: ${rejectModal.suggestion.trim()}`
+      : 'Rejected by operator (No suggestion provided).';
+
     try {
       await rejectRemediation(
         rejectModal.remediation.remediation_id,
-        rejectModal.reason,
-        rejectModal.operator
+        finalReason,
+        rejectModal.operator,
+        hasSug ? rejectModal.suggestion.trim() : null
       );
-      setRejectModal({ isOpen: false, remediation: null, reason: '', operator: '', isSubmitting: false });
+      setRejectModal({
+        isOpen: false,
+        remediation: null,
+        hasSuggestion: null,
+        suggestion: '',
+        operator: 'oncall-operator',
+        isSubmitting: false,
+      });
     } catch (err) {
       setRejectModal((prev) => ({ ...prev, isSubmitting: false }));
     }
@@ -253,32 +276,59 @@ export function ApprovalsPage() {
         </div>
 
         <div className="space-y-2.5">
-          {historicalApprovals.map((rem) => (
-            <Card key={rem.remediation_id} className="p-3.5 bg-white dark:bg-[#111726] border-gray-200 dark:border-slate-800">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono font-bold text-[#1E1B4B] dark:text-white">{rem.remediation_id}</span>
-                  <Badge variant={rem.status} size="xs">
-                    {rem.status}
-                  </Badge>
-                  <span className="text-slate-800 dark:text-slate-200 font-bold">{rem.title || rem.action_type}</span>
-                  <span className="text-slate-400 dark:text-slate-400 font-mono text-[11px]">({rem.target_service})</span>
+          {historicalApprovals.map((rem) => {
+            const isSuggestionApproved =
+              rem.status === 'suggestion_approved' ||
+              (rem.rejection_reason && rem.rejection_reason.toLowerCase().includes('suggestion')) ||
+              Boolean(rem.suggestion);
+
+            const badgeText = isSuggestionApproved
+              ? 'Suggestion Approved'
+              : rem.status === 'rejected'
+              ? 'Rejected'
+              : rem.status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+            const badgeVariant = isSuggestionApproved ? 'suggestion_approved' : rem.status;
+
+            return (
+              <Card key={rem.remediation_id} className="p-3.5 bg-white dark:bg-[#111726] border-gray-200 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-bold text-[#1E1B4B] dark:text-white">{rem.remediation_id}</span>
+                    <Badge variant={badgeVariant} size="xs">
+                      {badgeText}
+                    </Badge>
+                    <span className="text-slate-800 dark:text-slate-200 font-bold">{rem.title || rem.action_type}</span>
+                    <span className="text-slate-400 dark:text-slate-400 font-mono text-[11px]">({rem.target_service})</span>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-[11px]">
+                    <span className="font-mono">
+                      Decided by: <strong className="text-slate-700 dark:text-slate-300">{rem.operator || 'Sentinel Policy'}</strong>
+                    </span>
+                    <Link
+                      to="/remediation"
+                      className="text-[#6C5CE7] dark:text-[#A78BFA] hover:underline font-bold flex items-center gap-0.5"
+                    >
+                      Remediation Engine <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-[11px]">
-                  <span className="font-mono">
-                    Decided by: <strong className="text-slate-700 dark:text-slate-300">{rem.operator || 'Sentinel Policy'}</strong>
-                  </span>
-                  <Link
-                    to="/remediation"
-                    className="text-[#6C5CE7] dark:text-[#A78BFA] hover:underline font-bold flex items-center gap-0.5"
-                  >
-                    Remediation Engine <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
-            </Card>
-          ))}
+                {(rem.suggestion || (isSuggestionApproved && rem.rejection_reason)) && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-[#6344F5] dark:text-[#A78BFA] flex-shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-slate-800 dark:text-slate-200">Operator Suggestion: </strong>
+                      <span className="font-mono text-slate-700 dark:text-slate-300">
+                        {rem.suggestion || rem.rejection_reason?.replace(/^Rejected with suggestion:\s*/i, '')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       </div>
 
@@ -355,13 +405,13 @@ export function ApprovalsPage() {
         </Modal>
       )}
 
-      {/* Rejection Dialog */}
+      {/* Rejection Dialog with Suggestion Flow */}
       {rejectModal.isOpen && (
         <Modal
           isOpen={rejectModal.isOpen}
           onClose={() => setRejectModal({ ...rejectModal, isOpen: false })}
           title={`Reject Request: ${rejectModal.remediation?.remediation_id}`}
-          description="Log rejection reasoning for audit trail"
+          description="Review rejection and operator feedback"
           size="md"
           footer={
             <>
@@ -373,27 +423,125 @@ export function ApprovalsPage() {
                 Cancel
               </Button>
               <Button
-                variant="danger"
+                variant={rejectModal.hasSuggestion === 'yes' ? 'primary' : 'danger'}
                 size="xs"
                 loading={rejectModal.isSubmitting}
+                disabled={
+                  rejectModal.hasSuggestion === null ||
+                  (rejectModal.hasSuggestion === 'yes' && !rejectModal.suggestion.trim())
+                }
                 onClick={handleRejectConfirm}
               >
-                Confirm Rejection
+                {rejectModal.hasSuggestion === 'yes' ? 'Confirm Suggestion' : 'Confirm Rejection'}
               </Button>
             </>
           }
         >
-          <div className="space-y-3.5 text-xs">
+          <div className="space-y-4 text-xs">
+            {/* Target context banner */}
+            <div className="p-3 rounded-xl bg-gray-50 dark:bg-[#0D1424] border border-gray-200 dark:border-slate-800 text-gray-800 dark:text-slate-200 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-[#E11D48] flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="font-bold text-gray-900 dark:text-white">
+                  Rejecting: {rejectModal.remediation?.title || rejectModal.remediation?.action_type}
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Target Service:{' '}
+                  <strong className="text-slate-700 dark:text-slate-300 font-mono">
+                    {rejectModal.remediation?.target_service}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Question: "Do you have any suggestion" */}
+            <div className="p-4 rounded-xl bg-white dark:bg-[#151D30] border border-gray-200 dark:border-slate-700 shadow-2xs space-y-3">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-[#6344F5] dark:text-[#A78BFA] flex-shrink-0" />
+                <span className="font-bold text-sm text-gray-900 dark:text-white">
+                  Do you have any suggestion?
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Would you like to provide an alternative solution, action plan, or feedback regarding this rejection?
+              </p>
+
+              {/* Yes / No Options */}
+              <div className="flex items-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setRejectModal((prev) => ({ ...prev, hasSuggestion: 'yes' }))}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    rejectModal.hasSuggestion === 'yes'
+                      ? 'bg-[#6344F5] text-white shadow-sm ring-2 ring-[#6344F5]/30'
+                      : 'bg-gray-100 dark:bg-[#0D1424] text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRejectModal((prev) => ({ ...prev, hasSuggestion: 'no', suggestion: '' }))
+                  }
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    rejectModal.hasSuggestion === 'no'
+                      ? 'bg-slate-800 dark:bg-slate-600 text-white shadow-sm ring-2 ring-slate-600/30'
+                      : 'bg-gray-100 dark:bg-[#0D1424] text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <X className="w-3.5 h-3.5" />
+                  No
+                </button>
+              </div>
+            </div>
+
+            {/* If Yes: Suggestion Textarea */}
+            {rejectModal.hasSuggestion === 'yes' && (
+              <div className="space-y-1.5 animate-in fade-in duration-200">
+                <label className="block text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-[#6344F5] dark:text-[#A78BFA]" />
+                    Please enter your suggestion:
+                  </span>
+                  <span className="text-[10px] text-[#6344F5] dark:text-[#A78BFA] font-medium font-mono">
+                    Required with "Yes"
+                  </span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={rejectModal.suggestion}
+                  onChange={(e) =>
+                    setRejectModal((prev) => ({ ...prev, suggestion: e.target.value }))
+                  }
+                  className="w-full px-3 py-2 bg-[#F6F7FB] dark:bg-[#0D1424] border border-[#EEF0F6] dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#6344F5] dark:focus:border-[#A78BFA] placeholder-slate-400 dark:placeholder-slate-500"
+                  placeholder="e.g. Recommend scaling pool size to 250 connections first and warming redis cache before restarting..."
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {/* If No: Note */}
+            {rejectModal.hasSuggestion === 'no' && (
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-[#0D1424] border border-gray-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 animate-in fade-in duration-200 flex items-center gap-2">
+                <Check className="w-4 h-4 text-[#059669] flex-shrink-0" />
+                <span>No suggestion will be added. You can now confirm the rejection.</span>
+              </div>
+            )}
+
+            {/* Operator Identifier */}
             <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">Rejection Reason:</label>
-              <textarea
-                rows={3}
-                value={rejectModal.reason}
+              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs">
+                Operator Identifier:
+              </label>
+              <input
+                type="text"
+                value={rejectModal.operator}
                 onChange={(e) =>
-                  setRejectModal({ ...rejectModal, reason: e.target.value })
+                  setRejectModal((prev) => ({ ...prev, operator: e.target.value }))
                 }
-                className="w-full px-3 py-2 bg-[#F6F7FB] dark:bg-[#0D1424] border border-[#EEF0F6] dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:border-rose-500"
-                placeholder="State reason for rejecting..."
+                className="w-full px-3 py-1.5 bg-[#F6F7FB] dark:bg-[#0D1424] border border-[#EEF0F6] dark:border-slate-800 rounded-xl text-slate-900 dark:text-white font-mono text-xs focus:outline-none focus:border-[#6C5CE7]"
               />
             </div>
           </div>

@@ -121,15 +121,24 @@ export function SentinelProvider({ children }) {
     }
   };
 
-  // Operator Rejects Remediation
-  const rejectRemediation = async (remediationId, reason = '', operator = 'oncall-operator') => {
+  // Operator Rejects Remediation or Confirms Suggestion
+  const rejectRemediation = async (remediationId, reason = '', operator = 'oncall-operator', suggestion = null) => {
     try {
-      const res = await SentinelAPI.rejectRemediation(remediationId, reason, operator);
-      addToast({
-        type: 'warning',
-        title: 'Remediation Rejected',
-        message: `Remediation #${remediationId} was marked rejected. Reason logged to audit trail.`,
-      });
+      const isSuggestion = Boolean(suggestion || (reason && reason.toLowerCase().includes('suggestion')));
+      const res = await SentinelAPI.rejectRemediation(remediationId, reason, operator, suggestion);
+      if (isSuggestion) {
+        addToast({
+          type: 'success',
+          title: 'Suggestion Approved',
+          message: `Request #${remediationId}: Suggestion approved and logged to audit trail.`,
+        });
+      } else {
+        addToast({
+          type: 'warning',
+          title: 'Remediation Rejected',
+          message: `Remediation #${remediationId} was marked rejected. Reason logged to audit trail.`,
+        });
+      }
       await fetchData(true);
       return res;
     } catch (err) {

@@ -31,7 +31,7 @@ export function AuditLogsPage() {
       (actionFilter === 'DETECTION' && log.action.includes('incident')) ||
       (actionFilter === 'AI' && (log.action.includes('ai') || log.action.includes('investigation'))) ||
       (actionFilter === 'SAFETY' && log.action.includes('safety')) ||
-      (actionFilter === 'APPROVAL' && log.action.includes('approval')) ||
+      (actionFilter === 'APPROVAL' && (log.action.includes('approval') || log.action.includes('suggestion'))) ||
       (actionFilter === 'REMEDIATION' && log.action.includes('remediation')) ||
       (actionFilter === 'VERIFICATION' && log.action.includes('verification'));
 
@@ -64,10 +64,10 @@ export function AuditLogsPage() {
         </span>
       );
     }
-    if (action.includes('approval')) {
+    if (action.includes('approval') || action.includes('suggestion')) {
       return (
-        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0D1424] text-[#D97706] dark:text-[#FBBF24]">
-          APPROVAL
+        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0D1424] text-[#059669] dark:text-[#34D399]">
+          {action.includes('suggestion') ? 'SUGGESTION APPROVED' : 'APPROVAL'}
         </span>
       );
     }

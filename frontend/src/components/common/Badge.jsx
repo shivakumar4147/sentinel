@@ -32,6 +32,8 @@ export function Badge({ children, variant = 'default', size = 'sm', className = 
     remediating: 'bg-white dark:bg-[#0D1424] text-[#6344F5] dark:text-[#A78BFA] border border-gray-200 dark:border-slate-800',
 
     rejected: 'bg-white dark:bg-[#0D1424] text-[#E11D48] dark:text-[#FB7185] border border-gray-200 dark:border-slate-800',
+    suggestion_approved: 'bg-white dark:bg-[#0D1424] text-[#059669] dark:text-[#34D399] border border-gray-200 dark:border-slate-800',
+    'suggestion approved': 'bg-white dark:bg-[#0D1424] text-[#059669] dark:text-[#34D399] border border-gray-200 dark:border-slate-800',
     failed: 'bg-white dark:bg-[#0D1424] text-[#E11D48] dark:text-[#FB7185] border border-gray-200 dark:border-slate-800',
     stopped: 'bg-white dark:bg-[#0D1424] text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-800',
     
