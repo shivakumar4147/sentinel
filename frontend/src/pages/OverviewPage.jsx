@@ -15,11 +15,11 @@ export function OverviewPage() {
 
   const criticalIncidents = incidents.filter((i) => i.severity === 'critical' && i.status !== 'resolved').length;
   const pendingApprovals = remediations.filter(
-    (r) => r.status === 'awaiting_approval' || r.status === 'pending_approval'
+    (r) => r.status === 'awaiting_approval' || r.status === 'pending_approval' || r.status === 'changes_suggested'
   ).length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       {/* Action Required: Critical Warning Card matching reference image design */}
       {criticalIncidents > 0 && (
         <div className="p-5 sm:p-6 rounded-2xl bg-[#161D2B] border border-red-500/40 ring-1 ring-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.28)] flex flex-col md:flex-row md:items-center justify-between gap-5 text-white transition-all">
@@ -73,7 +73,7 @@ export function OverviewPage() {
       <ClusterTelemetryRow />
 
       {/* 3. 2-Column Analytics Chart Row */}
-      <div className="bg-white dark:bg-[#111726] border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-slate-800 transition-colors">
+      <div className="bg-white dark:bg-[#131824] border border-gray-200/90 dark:border-[#232D42] rounded-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200/90 dark:divide-[#232D42] shadow-soft transition-colors">
         <IncidentChart />
         <ResourceUsageChart />
       </div>

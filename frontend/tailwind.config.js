@@ -8,19 +8,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#F6F7FB',
+        canvas: '#F8FAFC',
         card: '#FFFFFF',
+        // Distinctive modern dark palette (Obsidian Slate & Cobalt Steel - avoiding generic neon violet AI look)
+        slateDark: {
+          bg: '#0C0F17',
+          surface: '#131824',
+          elevated: '#1A2234',
+          border: '#232D42',
+          borderSubtle: '#1C2436',
+          text: '#F1F5F9',
+          muted: '#94A3B8',
+        },
         brand: {
-          50: '#F5F3FF',
-          100: '#EDE9FE',
-          200: '#DDD6FE',
-          300: '#C4B5FD',
-          400: '#A78BFA',
-          500: '#8B5CF6',
-          600: '#6C5CE7', // Primary Violet from screenshot
-          700: '#5B4EDB',
-          800: '#4C3FAF',
-          900: '#342982',
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#3B82F6',
+          600: '#2563EB', // Sleek Technical Cobalt
+          700: '#1D4ED8',
+          800: '#1E40AF',
+          900: '#1E3A8A',
         },
       },
       fontFamily: {
@@ -29,7 +39,9 @@ export default {
       },
       boxShadow: {
         'soft': '0 2px 14px rgba(0, 0, 0, 0.035)',
-        'soft-hover': '0 6px 20px rgba(108, 92, 231, 0.08)',
+        'soft-hover': '0 8px 24px rgba(37, 99, 235, 0.08)',
+        'dark-soft': '0 4px 20px rgba(0, 0, 0, 0.35)',
+        'glow-cobalt': '0 0 25px rgba(59, 130, 246, 0.18)',
       },
       borderRadius: {
         'xl': '0.875rem',

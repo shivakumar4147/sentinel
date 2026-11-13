@@ -73,24 +73,38 @@ describe('SentinelAPI Client (Member 2)', () => {
     expect(inc.status).toBe('resolved');
   });
 
-  it('rejects remediation with suggestion and marks status suggestion_approved', async () => {
+  it('rejects remediation with suggestion and marks status changes_suggested', async () => {
     const res = await SentinelAPI.rejectRemediation(
       'REM-301',
-      'Rejected with suggestion: Warm redis cache first',
+      'Changes Suggested: Warm redis cache first',
       'operator-bob',
       'Warm redis cache first'
     );
     expect(res.success).toBe(true);
-    expect(res.remediation.status).toBe('suggestion_approved');
+    expect(res.remediation.status).toBe('changes_suggested');
     expect(res.remediation.suggestion).toBe('Warm redis cache first');
     expect(res.remediation.operator).toBe('operator-bob');
 
     const logs = await SentinelAPI.getAuditLogs();
     const suggestionLog = logs.logs.find(
-      (l) => l.action === 'suggestion_approved' && l.actor === 'operator-bob'
+      (l) => l.action === 'changes_suggested' && l.actor === 'operator-bob'
     );
     expect(suggestionLog).toBeDefined();
     expect(suggestionLog.details.suggestion).toBe('Warm redis cache first');
+  });
+
+  it('runs interactive AI revision loop and produces new proposal on same problem', async () => {
+    const res = await SentinelAPI.reviseRemediation(
+      'REM-301',
+      'Scale pool size to 250 and warm cache before restart',
+      'operator-bob'
+    );
+    expect(res.success).toBe(true);
+    expect(res.remediation.status).toBe('awaiting_approval');
+    expect(res.remediation.is_revised).toBe(true);
+    expect(res.remediation.revision).toBeGreaterThanOrEqual(2);
+    expect(res.remediation.title).toContain('Rev');
+    expect(res.remediation.reason).toContain('operator feedback');
   });
 });
 

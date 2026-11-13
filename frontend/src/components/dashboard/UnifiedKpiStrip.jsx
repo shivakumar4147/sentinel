@@ -34,11 +34,11 @@ export function UnifiedKpiStrip() {
   ];
 
   return (
-    <div className="bg-white dark:bg-[#111726] border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-slate-800 transition-colors">
+    <div className="bg-white dark:bg-[#131824] border border-gray-200/90 dark:border-[#232D42] rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-200/90 dark:divide-[#232D42] shadow-soft transition-colors">
       {kpis.map((kpi, idx) => (
         <div
           key={idx}
-          className="p-5 flex flex-col justify-between hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors select-none"
+          className="p-6 flex flex-col justify-between hover:bg-slate-50/60 dark:hover:bg-[#1A2234] transition-colors select-none"
         >
           <div>
             {/* Header: Title + external link icon */}

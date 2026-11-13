@@ -66,8 +66,8 @@ export function AuditLogsPage() {
     }
     if (action.includes('approval') || action.includes('suggestion')) {
       return (
-        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded border border-gray-200 dark:border-slate-800 bg-white dark:bg-[#0D1424] text-[#059669] dark:text-[#34D399]">
-          {action.includes('suggestion') ? 'SUGGESTION APPROVED' : 'APPROVAL'}
+        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded border border-gray-200 dark:border-[#232D42] bg-white dark:bg-[#131824] text-[#2563EB] dark:text-[#60A5FA]">
+          {action.includes('suggestion') ? 'CHANGES SUGGESTED' : 'APPROVAL'}
         </span>
       );
     }

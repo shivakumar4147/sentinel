@@ -18,6 +18,7 @@ export function SentinelProvider({ children }) {
   const [error, setError] = useState(null);
   const [isMockMode, setIsMockModeState] = useState(getMockMode());
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [timeRange, setTimeRange] = useState('Last 24 Hours');
 
   // Load all system data
   const fetchData = useCallback(async (quiet = false) => {
@@ -121,16 +122,16 @@ export function SentinelProvider({ children }) {
     }
   };
 
-  // Operator Rejects Remediation or Confirms Suggestion
+  // Operator Rejects Remediation or Submits Changes Suggested
   const rejectRemediation = async (remediationId, reason = '', operator = 'oncall-operator', suggestion = null) => {
     try {
       const isSuggestion = Boolean(suggestion || (reason && reason.toLowerCase().includes('suggestion')));
       const res = await SentinelAPI.rejectRemediation(remediationId, reason, operator, suggestion);
       if (isSuggestion) {
         addToast({
-          type: 'success',
-          title: 'Suggestion Approved',
-          message: `Request #${remediationId}: Suggestion approved and logged to audit trail.`,
+          type: 'info',
+          title: 'Changes Suggested',
+          message: `Request #${remediationId}: Operator feedback logged. Backend AI is formulating a revised plan...`,
         });
       } else {
         addToast({
@@ -145,6 +146,27 @@ export function SentinelProvider({ children }) {
       addToast({
         type: 'error',
         title: 'Action Failed',
+        message: err.message,
+      });
+      throw err;
+    }
+  };
+
+  // AI Revision Loop: Synthesize revised proposal based on operator feedback
+  const reviseRemediation = async (remediationId, suggestion = '', operator = 'oncall-operator') => {
+    try {
+      const res = await SentinelAPI.reviseRemediation(remediationId, suggestion, operator);
+      addToast({
+        type: 'success',
+        title: 'AI Revision Ready',
+        message: `New remediation proposal formulated for #${remediationId}. Ready for review.`,
+      });
+      await fetchData(true);
+      return res;
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Revision Failed',
         message: err.message,
       });
       throw err;
@@ -193,12 +215,15 @@ export function SentinelProvider({ children }) {
         error,
         isMockMode,
         lastRefreshed,
+        timeRange,
+        setTimeRange,
         refreshData: fetchData,
         toggleMockMode,
         resetDemoData,
         investigateIncident,
         approveRemediation,
         rejectRemediation,
+        reviseRemediation,
         executeRemediation,
       }}
     >

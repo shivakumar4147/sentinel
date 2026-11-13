@@ -14,22 +14,22 @@ export function Button({
   ...props
 }) {
   const baseClasses =
-    'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#6C5CE7]/40 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
+    'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#2563EB]/40 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98] cursor-pointer';
 
   const sizeClasses = {
     xs: 'text-xs px-2.5 py-1 gap-1.5',
-    sm: 'text-xs px-3 py-1.5 gap-1.5',
+    sm: 'text-xs px-3.5 py-1.5 gap-1.5',
     md: 'text-sm px-4 py-2 gap-2',
     lg: 'text-sm px-5 py-2.5 gap-2',
   };
 
   const variantClasses = {
-    primary: 'bg-[#6C5CE7] hover:bg-[#5B4EDB] text-white shadow-sm shadow-[#6C5CE7]/20',
-    secondary: 'bg-white dark:bg-[#111726] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-[#EEF0F6] dark:border-slate-800 shadow-sm',
-    danger: 'bg-[#E11D48] hover:bg-[#BE123C] text-white shadow-sm shadow-rose-500/20',
-    warning: 'bg-[#D97706] hover:bg-[#B45309] text-white shadow-sm',
-    ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-slate-800 text-[#6344F5] dark:text-[#A78BFA]',
-    outline: 'bg-white dark:bg-[#111726] border border-gray-200 dark:border-slate-800 hover:border-[#6344F5] dark:hover:border-[#A78BFA] text-[#6344F5] dark:text-[#A78BFA]',
+    primary: 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm shadow-blue-500/20 border border-blue-600/30',
+    secondary: 'bg-white dark:bg-[#131824] hover:bg-slate-50 dark:hover:bg-[#1A2234] text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-[#232D42] shadow-2xs',
+    danger: 'bg-[#E11D48] hover:bg-[#BE123C] text-white shadow-sm shadow-rose-500/20 border border-rose-600/30',
+    warning: 'bg-[#D97706] hover:bg-[#B45309] text-white shadow-sm border border-amber-600/30',
+    ghost: 'bg-transparent hover:bg-slate-100 dark:hover:bg-[#1A2234] text-[#2563EB] dark:text-[#60A5FA]',
+    outline: 'bg-white dark:bg-[#131824] border border-gray-200 dark:border-[#232D42] hover:border-[#2563EB] dark:hover:border-[#60A5FA] text-[#2563EB] dark:text-[#60A5FA]',
   };
 
   return (
