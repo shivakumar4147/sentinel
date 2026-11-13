@@ -1,4 +1,4 @@
-"""Route structured code inspection requests through Groq and Ollama."""
+"""Route structured code inspection requests through Gemini and Ollama."""
 
 import logging
 import os
@@ -7,6 +7,7 @@ from pydantic import ValidationError
 import requests
 from groq import Groq
 
+from app import gemini_client
 from app.schemas import CodeInspectionReport
 
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 OLLAMA_URL = "http://localhost:11434/api/chat"
 OLLAMA_MODEL = "qwen3.5:4b"
-MAX_INSPECTION_OUTPUT_TOKENS = 1200
+MAX_INSPECTION_OUTPUT_TOKENS = 1500
 
 
 def _validate_response(content: str, provider: str) -> CodeInspectionReport:
@@ -25,6 +26,20 @@ def _validate_response(content: str, provider: str) -> CodeInspectionReport:
         raise ValueError(
             f"{provider} returned invalid code inspection JSON"
         ) from error
+
+
+def _generate_gemini_response(prompt: str) -> CodeInspectionReport:
+    """Request and validate a structured code report from Gemini."""
+    system_instruction = (
+        "You inspect source code using only supplied evidence. "
+        "Return concise structured JSON. Never invent findings."
+    )
+    return gemini_client.generate_structured(
+        prompt=prompt,
+        response_schema=CodeInspectionReport,
+        system_instruction=system_instruction,
+        max_output_tokens=MAX_INSPECTION_OUTPUT_TOKENS,
+    )
 
 
 def _generate_groq_response(prompt: str) -> CodeInspectionReport:
@@ -97,13 +112,13 @@ def _generate_ollama_response(prompt: str) -> CodeInspectionReport:
 
 
 def generate_code_inspection(prompt: str) -> CodeInspectionReport:
-    """Try Groq first and fall back to Ollama for code inspection."""
+    """Try Gemini first and fall back to Ollama for code inspection."""
     try:
-        return _generate_groq_response(prompt)
-    except Exception as groq_error:
+        return _generate_gemini_response(prompt)
+    except Exception as gemini_error:
         logger.warning(
-            "Groq code inspection failed; trying Ollama fallback: %s",
-            groq_error,
+            "Gemini code inspection failed; trying Ollama fallback: %s",
+            gemini_error,
             exc_info=True,
         )
 
@@ -111,5 +126,5 @@ def generate_code_inspection(prompt: str) -> CodeInspectionReport:
         return _generate_ollama_response(prompt)
     except Exception as ollama_error:
         raise RuntimeError(
-            "Both Groq and Ollama code inspection providers failed"
+            "Both Gemini and Ollama code inspection providers failed"
         ) from ollama_error

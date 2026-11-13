@@ -12,8 +12,8 @@ from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
-DEFAULT_TIMEOUT_SECONDS = 30.0
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
+DEFAULT_TIMEOUT_MS = 120000
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -38,6 +38,40 @@ class GeminiValidationError(GeminiResponseError):
     """Raised when Gemini returns JSON that fails Pydantic schema validation."""
 
 
+def _sanitize_gemini_schema(schema: dict) -> dict:
+    """Remove JSON Schema keywords unsupported by Gemini response schemas."""
+    sanitized: dict = {}
+    for key, value in schema.items():
+        if key == "additionalProperties":
+            continue
+        if isinstance(value, dict):
+            sanitized[key] = _sanitize_gemini_schema(value)
+        elif isinstance(value, list):
+            sanitized[key] = [
+                _sanitize_gemini_schema(item) if isinstance(item, dict) else item
+                for item in value
+            ]
+        else:
+            sanitized[key] = value
+    return sanitized
+
+
+def _get_timeout_ms() -> int:
+    """Read a positive Gemini request timeout in milliseconds."""
+    raw_timeout = os.getenv("GEMINI_TIMEOUT_MS", str(DEFAULT_TIMEOUT_MS))
+    try:
+        timeout_ms = int(raw_timeout)
+    except ValueError as exc:
+        raise GeminiAPIError(
+            "GEMINI_TIMEOUT_MS must be a positive integer in milliseconds"
+        ) from exc
+    if timeout_ms <= 0:
+        raise GeminiAPIError(
+            "GEMINI_TIMEOUT_MS must be a positive integer in milliseconds"
+        )
+    return timeout_ms
+
+
 def _get_client(api_key: str | None = None) -> genai.Client:
     """Instantiate a Gemini client without exposing credentials."""
     key = api_key or os.getenv("GEMINI_API_KEY")
@@ -45,7 +79,7 @@ def _get_client(api_key: str | None = None) -> genai.Client:
         raise GeminiAPIError("GEMINI_API_KEY environment variable is not set")
     return genai.Client(
         api_key=key.strip(),
-        http_options=types.HttpOptions(timeout=DEFAULT_TIMEOUT_SECONDS),
+        http_options=types.HttpOptions(timeout=_get_timeout_ms()),
     )
 
 
@@ -65,10 +99,11 @@ def generate_structured(
     """
     model_name = model or os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
     genai_client = client or _get_client()
+    sanitized_schema = _sanitize_gemini_schema(response_schema.model_json_schema())
 
     config = types.GenerateContentConfig(
         response_mime_type="application/json",
-        response_schema=response_schema,
+        response_schema=sanitized_schema,
         temperature=temperature,
     )
     if system_instruction:

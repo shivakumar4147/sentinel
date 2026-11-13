@@ -1,4 +1,4 @@
-"""Route structured test-result analysis through Groq and Ollama."""
+"""Route structured test-result analysis through Gemini and Ollama."""
 
 import logging
 import os
@@ -6,6 +6,7 @@ import os
 import requests
 from groq import Groq
 
+from app import gemini_client
 from app.schemas import TestResultAnalysis as AnalysisModel
 
 
@@ -13,6 +14,20 @@ logger = logging.getLogger(__name__)
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 OLLAMA_URL = "http://localhost:11434/api/chat"
 OLLAMA_MODEL = "qwen3.5:4b"
+
+
+def _generate_gemini_analysis(prompt: str) -> AnalysisModel:
+    """Request and validate structured test analysis from Gemini."""
+    system_instruction = (
+        "Analyze supplied test output only. Return concise "
+        "structured JSON and never invent results."
+    )
+    return gemini_client.generate_structured(
+        prompt=prompt,
+        response_schema=AnalysisModel,
+        system_instruction=system_instruction,
+        max_output_tokens=700,
+    )
 
 
 def _generate_groq_analysis(prompt: str) -> AnalysisModel:
@@ -82,12 +97,13 @@ def _generate_ollama_analysis(prompt: str) -> AnalysisModel:
 
 
 def analyze_test_results_with_model(prompt: str) -> AnalysisModel:
-    """Try Groq first and fall back to Ollama for test-result analysis."""
+    """Try Gemini first and fall back to Ollama for test-result analysis."""
     try:
-        return _generate_groq_analysis(prompt)
-    except Exception:
+        return _generate_gemini_analysis(prompt)
+    except Exception as gemini_error:
         logger.warning(
-            "Groq test-result analysis failed; trying Ollama fallback",
+            "Gemini test-result analysis failed; trying Ollama fallback: %s",
+            gemini_error,
             exc_info=True,
         )
 
@@ -95,5 +111,5 @@ def analyze_test_results_with_model(prompt: str) -> AnalysisModel:
         return _generate_ollama_analysis(prompt)
     except Exception as ollama_error:
         raise RuntimeError(
-            "Both Groq and Ollama test-result analysis providers failed"
+            "Both Gemini and Ollama test-result analysis providers failed"
         ) from ollama_error
