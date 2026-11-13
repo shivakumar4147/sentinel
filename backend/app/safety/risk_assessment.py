@@ -16,6 +16,7 @@ BASE_ACTION_RISK_MAP: Dict[str, RiskLevel] = {
     "clear_cache": RiskLevel.LOW,
     "restart_container": RiskLevel.MEDIUM,
     "scale_replicas": RiskLevel.MEDIUM,
+    "apply_code_patch": RiskLevel.MEDIUM,
     "rollback_deployment": RiskLevel.HIGH,
     "isolate_traffic": RiskLevel.HIGH,
 }

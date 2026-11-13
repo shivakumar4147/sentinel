@@ -14,8 +14,10 @@ import { useTheme } from '../context/ThemeContext';
 
 export function Header({ setMobileOpen }) {
   const location = useLocation();
-  const { isMockMode, toggleMockMode, incidents, timeRange, setTimeRange, refreshData } = useSentinel();
+  const { isMockMode, toggleMockMode, incidents, timeRange, setTimeRange, refreshData, health } = useSentinel();
   const { isDark, toggleTheme } = useTheme();
+
+  const isLiveConnected = Boolean(health && !health.isMock && (health.status === 'healthy' || health.status === 'operational'));
 
   const [timeDropdownOpen, setTimeDropdownOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -137,18 +139,39 @@ export function Header({ setMobileOpen }) {
           )}
         </div>
 
-        {/* Mock/Live API toggle pill */}
+        {/* Mock/Live API connection status pill */}
         <button
           onClick={() => toggleMockMode(!isMockMode)}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 bg-white dark:bg-[#131824] cursor-pointer ${
-            isMockMode
-              ? 'border-gray-200 dark:border-[#232D42] text-[#2563EB] dark:text-[#60A5FA] hover:bg-slate-50 dark:hover:bg-[#1A2234]'
-              : 'border-gray-200 dark:border-[#232D42] text-[#059669] dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-[#1A2234]'
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-2 bg-white dark:bg-[#131824] shadow-2xs cursor-pointer ${
+            isLiveConnected && !isMockMode
+              ? 'border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+              : !isMockMode
+              ? 'border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+              : 'border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30'
           }`}
-          title="Toggle Mock Telemetry vs Live Backend API"
+          title={
+            isLiveConnected && !isMockMode
+              ? 'Connected to live backend at port 8000. Click to switch to mock data.'
+              : !isMockMode
+              ? 'Backend offline (port 8000 not reachable). Falling back to mock data. Click to toggle.'
+              : 'Mock telemetry active. Click to connect to live backend.'
+          }
         >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              isLiveConnected && !isMockMode
+                ? 'bg-emerald-500 animate-pulse'
+                : !isMockMode
+                ? 'bg-amber-500 animate-ping'
+                : 'bg-blue-500'
+            }`}
+          />
           <span className="hidden sm:inline">
-            {isMockMode ? 'Mock Telemetry' : 'Live API'}
+            {isLiveConnected && !isMockMode
+              ? 'Live Backend (Connected)'
+              : !isMockMode
+              ? 'Backend Offline (Mock Fallback)'
+              : 'Mock Mode Active'}
           </span>
         </button>
 

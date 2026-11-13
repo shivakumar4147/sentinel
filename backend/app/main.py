@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes.approvals import router as approvals_router
 from app.api.routes.audit import router as audit_router
+from app.api.routes.demo_app import router as demo_app_router
 from app.api.routes.health import router as health_router
 from app.api.routes.incidents import router as incidents_router
 from app.api.routes.investigations import router as investigations_router
@@ -63,6 +64,7 @@ app.add_middleware(
 # Global API Router Mounting
 api_prefix = settings.API_PREFIX
 
+# Primary /api prefix routes
 app.include_router(health_router, prefix=api_prefix)
 app.include_router(services_router, prefix=api_prefix)
 app.include_router(incidents_router, prefix=api_prefix)
@@ -70,6 +72,17 @@ app.include_router(investigations_router, prefix=api_prefix)
 app.include_router(approvals_router, prefix=api_prefix)
 app.include_router(remediation_router, prefix=api_prefix)
 app.include_router(audit_router, prefix=api_prefix)
+app.include_router(demo_app_router, prefix=api_prefix)
+
+# Dual-mount without /api prefix for direct client & proxy compatibility
+app.include_router(health_router)
+app.include_router(services_router)
+app.include_router(incidents_router)
+app.include_router(investigations_router)
+app.include_router(approvals_router)
+app.include_router(remediation_router)
+app.include_router(audit_router)
+app.include_router(demo_app_router)
 
 
 @app.get("/", tags=["Root"])
@@ -99,4 +112,10 @@ async def global_exception_handler(request: Request, exc: Exception):
             },
         },
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=settings.DEBUG)
+
 

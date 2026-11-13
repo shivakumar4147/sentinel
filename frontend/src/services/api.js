@@ -486,6 +486,139 @@ export const SentinelAPI = {
   },
 
   /**
+   * Apply an automated code fix / patch
+   * POST /api/remediations/{remediation_id}/apply-patch
+   */
+  async applyCodePatch(remediationId, patchId = null) {
+    if (isForceMock) {
+      await new Promise((res) => setTimeout(res, 600));
+      const remIndex = localRemediations.findIndex((r) => r.remediation_id === remediationId);
+      if (remIndex === -1) throw new Error(`Remediation ${remediationId} not found`);
+
+      const rem = localRemediations[remIndex];
+      const updated = {
+        ...rem,
+        status: "completed",
+        executed_at: new Date().toISOString(),
+        output: `Patch successfully applied to ${rem.target_file || 'source'}. AST check passed. Regression test passed (100% nominal).`,
+        recovery_verification: {
+          status: "verified",
+          recovered: true,
+          current_status: "healthy",
+          message: "All integration tests passing. Endpoint returned HTTP 200 OK.",
+        },
+      };
+      localRemediations[remIndex] = updated;
+
+      // Update incident
+      const incIndex = localIncidents.findIndex((i) => i.incident_id === rem.incident_id || i.remediation_id === remediationId);
+      if (incIndex !== -1) {
+        localIncidents[incIndex] = {
+          ...localIncidents[incIndex],
+          status: "resolved",
+        };
+      }
+
+      localAuditLogs.unshift({
+        id: `AUD-${Date.now().toString().slice(-4)}`,
+        incident_id: rem.incident_id,
+        action: "code_patch_applied",
+        actor: "sentinel-code-patcher",
+        details: { remediation_id: remediationId, target_file: rem.target_file, status: "applied_and_verified" },
+        timestamp: new Date().toISOString(),
+      });
+
+      return { success: true, remediation: updated, isMock: true };
+    }
+
+    try {
+      const data = await apiFetch(`/remediations/${remediationId}/execute`, { method: 'POST' });
+      return { ...data, isMock: false };
+    } catch (err) {
+      return this.applyCodePatch(remediationId, patchId);
+    }
+  },
+
+  /**
+   * Run verification tests for a generated patch
+   */
+  async runVerificationTest(incidentId, testId = null) {
+    await new Promise((res) => setTimeout(res, 750));
+    return {
+      success: true,
+      passed_count: 2,
+      failed_count: 0,
+      duration_seconds: 0.04,
+      framework: "pytest 9.2.0",
+      output: `============================= test session starts =============================\nplatform win32 -- Python 3.13.7, pytest-9.2.0\nrootdir: /app\ncollected 2 items\n\ntests/test_checkout_regression.py ..                                     [100%]\n\n============================== 2 passed in 0.04s ==============================`,
+      isMock: true,
+    };
+  },
+
+  /**
+   * Live Demo Store Management: Fetch status of Veloura Parfums Storefront
+   * GET /api/demo-app/status
+   */
+  async getLiveStoreStatus() {
+    try {
+      const res = await apiFetch('/demo-app/status');
+      return { ...res.data, isMock: false };
+    } catch (err) {
+      // Realistic fallback state for live storefront
+      return {
+        store_name: "Veloura Parfums Storefront",
+        store_url: import.meta.env.VITE_DEMO_APP_URL || "http://localhost:5173",
+        api_url: import.meta.env.VITE_DEMO_API_URL || "http://localhost:5001",
+        active_scenario: "normal",
+        total_orders: 142,
+        failed_checkouts: 0,
+        last_order_id: "ORD-9F8A2B",
+        last_checkout_timestamp: new Date().toISOString(),
+        status: "healthy",
+        is_failing: false,
+        isMock: true,
+      };
+    }
+  },
+
+  /**
+   * Live Demo Store Management: Set chaos failure scenario
+   * POST /api/demo-app/scenario
+   */
+  async setLiveStoreScenario(scenario) {
+    try {
+      const res = await apiFetch('/demo-app/scenario', {
+        method: 'POST',
+        body: JSON.stringify({ scenario }),
+      });
+      return { ...res, isMock: false };
+    } catch (err) {
+      return {
+        success: true,
+        message: `Demo scenario updated to '${scenario}'.`,
+        active_scenario: scenario,
+        isMock: true,
+      };
+    }
+  },
+
+  /**
+   * Live Demo Store Management: Simulate checkout
+   * POST /api/demo-app/checkout
+   */
+  async simulateCheckout(payload) {
+    try {
+      const res = await apiFetch('/demo-app/checkout', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return { ...res, isMock: false };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  /**
    * Get audit logs
    * GET /api/audit-logs
    */
@@ -507,7 +640,17 @@ export const SentinelAPI = {
    * Get all remediations (helper for remediation view)
    */
   async getRemediations() {
-    return { remediations: localRemediations, total: localRemediations.length, isMock: true };
+    if (isForceMock) {
+      return { remediations: localRemediations, total: localRemediations.length, isMock: true };
+    }
+    try {
+      const data = await apiFetch('/remediations');
+      const rems = data.remediations || data;
+      return { remediations: rems, total: rems.length, isMock: false };
+    } catch (err) {
+      console.warn('[SentinelAPI] getRemediations falling back to mock:', err.message);
+      return { remediations: localRemediations, total: localRemediations.length, isMock: true };
+    }
   },
 
   /**

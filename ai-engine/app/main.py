@@ -32,6 +32,7 @@ from app.workflow import FullInvestigationError, run_full_investigation
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+APPROVED_WORKSPACE = PROJECT_ROOT.parent
 load_dotenv(PROJECT_ROOT / ".env")
 
 
@@ -103,7 +104,7 @@ def investigate_full(
     try:
         return run_full_investigation(
             request,
-            approved_workspace=PROJECT_ROOT,
+            approved_workspace=APPROVED_WORKSPACE,
         )
     except FullInvestigationError as error:
         logger.exception("Full investigation failed")
@@ -111,3 +112,10 @@ def investigate_full(
             status_code=502,
             detail="Unable to complete investigation workflow",
         ) from error
+
+
+if __name__ == "__main__":
+    import os
+    import uvicorn
+    port = int(os.getenv("PORT", "8001"))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)

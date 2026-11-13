@@ -90,6 +90,162 @@ export const MOCK_SERVICES = [
 
 export const MOCK_INCIDENTS = [
   {
+    incident_id: "INC-8490",
+    title: "Checkout HTTP 500: AttributeError in handle_checkout()",
+    service: "api",
+    service_name: "Veloura Parfums Storefront API",
+    status: "awaiting_approval", // investigating, awaiting_approval, remediating, resolved
+    severity: "critical", // critical, warning, info
+    summary: "Live storefront checkout throwing HTTP 500 errors. AttributeError: 'NoneType' object has no attribute 'lower' in handle_checkout().",
+    created_at: "2026-11-13T17:15:30Z",
+    updated_at: "2026-11-13T17:22:10Z",
+    duration: "18m",
+    remediation_id: "REM-300",
+    has_code_patch: true,
+    evidence: {
+      incident_id: "INC-8490",
+      service: "api",
+      logs: [
+        "[2026-11-13 17:15:22] POST /api/checkout HTTP/1.1 500 Internal Server Error",
+        "[2026-11-13 17:15:23] ERROR: Unhandled exception in request handler: AttributeError: 'NoneType' object has no attribute 'lower'",
+        "[2026-11-13 17:15:23] TRACEBACK: File 'sample_checkout/checkout.py', line 9, in handle_checkout: payment_method = request.get('paymentMethod').lower()",
+        "[2026-11-13 17:15:28] ALERT: Live checkout transaction failed for customer order on Veloura Parfums Storefront",
+        "[2026-11-13 17:16:01] TELEMETRY: Checkout error rate surged from 0.0% to 88.4%",
+      ],
+      metrics: {
+        cpu_usage: 42.5,
+        memory_usage: 56.1,
+        error_rate: 88.4,
+        checkout_failures: 19,
+        latency_p99_ms: 1840,
+        normal_latency_p99_ms: 85,
+      },
+      recent_changes: [
+        "Commit c435347: Integrate Veloura demo application",
+        "Config flag: SIMULATE_BAD_DEPLOYMENT=true in deployment manifest",
+      ],
+      dependency_status: {
+        "sentinel-ecommerce-db": "healthy (PostgreSQL 16)",
+        "sentinel-ecommerce-api": "degraded (500s on checkout)",
+        "sentinel-ecommerce-frontend": "online (http://localhost:5173)",
+      },
+    },
+    investigation: {
+      root_cause: "AttributeError in handle_checkout(): request.get('paymentMethod') called without null or type validation, crashing checkout flow when payload omits paymentMethod.",
+      confidence: 0.98,
+      evidence: [
+        "AttributeError: 'NoneType' object has no attribute 'lower' in sample_checkout/checkout.py:9",
+        "Surge in HTTP 500 responses on POST /api/checkout endpoint",
+        "Frontend checkout requests dropping customer orders",
+      ],
+      recommended_action: "apply_code_patch",
+      remediation_title: "Apply Defensive Null Check Patch in handle_checkout()",
+      risk_level: "medium", // low, medium, high, critical
+      requires_approval: true,
+      suggested_command: "git apply patches/checkout_null_safety.diff && pytest tests/test_checkout_regression.py",
+      impact_assessment: "Eliminates null pointer exception on checkout. Restores 100% successful order placement on live storefront with zero downtime.",
+      safety_policy_passed: true,
+      verified_facts: [
+        { label: "Target Code File", value: "sample_checkout/checkout.py (Line 9)", status: "verified" },
+        { label: "Observed Error", value: "AttributeError: 'NoneType' has no attribute 'lower'", status: "verified" },
+        { label: "Checkout Error Rate", value: "88.4% (19 failed transactions)", status: "verified" },
+        { label: "Live Target Website", value: "Veloura Parfums (http://localhost:5173)", status: "verified" },
+      ],
+      ai_hypotheses: [
+        { label: "Payment Gateway Outage", probability: 0.04, status: "rejected", reason: "Gateway webhook endpoint health probe responding HTTP 200" },
+        { label: "Database Deadlock", probability: 0.06, status: "rejected", reason: "Order schema tables have zero lock contention" },
+        { label: "Null Parameter Dereference", probability: 0.98, status: "confirmed", reason: "Correlated directly to stack trace on line 9 of checkout.py" },
+      ],
+      code_inspection: {
+        findings: [
+          {
+            file_path: "sample_checkout/checkout.py",
+            start_line: 8,
+            end_line: 12,
+            severity: "critical",
+            title: "Unhandled AttributeError on request.get('paymentMethod')",
+            description: "handle_checkout() unconditionally calls .lower() on request.get('paymentMethod') without validating existence or type. When missing or None, raises unhandled AttributeError crashing requests with HTTP 500.",
+            evidence: ['payment_method = request.get("paymentMethod").lower()'],
+            recommendation: "Safely validate request.get('paymentMethod') is a non-empty string before calling .lower(), returning 400 validation error if absent.",
+            confidence: 0.98,
+          },
+        ],
+        files_inspected: ["sample_checkout/checkout.py"],
+        missing_information: [],
+      },
+      patch_generation: {
+        patches: [
+          {
+            file_path: "sample_checkout/checkout.py",
+            unified_diff: `--- a/checkout.py
++++ b/checkout.py
+@@ -6,7 +6,10 @@
+ 
+ def handle_checkout(request: dict) -> dict:
+     """Validate a checkout request and return a simulated checkout result."""
+-    payment_method = request.get("paymentMethod").lower()
++    raw_method = request.get("paymentMethod")
++    if not isinstance(raw_method, str) or not raw_method.strip():
++        return {"status": "error", "message": "Invalid or missing payment method"}
++    payment_method = raw_method.strip().lower()
+ 
+     if payment_method not in SUPPORTED_PAYMENT_METHODS:
+         return {`,
+            explanation: "Guards against None or non-string values before calling lower(), returning a structured 400 error instead of 500 server crash.",
+            related_finding: "Unhandled AttributeError on request.get('paymentMethod')",
+            confidence: 0.98,
+          },
+        ],
+        missing_information: [],
+        overall_confidence: 0.98,
+      },
+      test_generation: {
+        tests: [
+          {
+            file_path: "tests/test_checkout_regression.py",
+            test_framework: "pytest",
+            test_code: `import pytest
+from sample_checkout.checkout import handle_checkout
+
+def test_checkout_missing_payment_method():
+    """Should gracefully reject missing payment method with 400 error."""
+    req = {"amount": 185.0}
+    res = handle_checkout(req)
+    assert res["status"] == "error"
+    assert "payment method" in res["message"].lower()
+
+def test_checkout_valid_card():
+    """Should accept valid payment when properly formatted."""
+    req = {"paymentMethod": "card", "amount": 185.0}
+    res = handle_checkout(req)
+    assert res["status"] == "accepted"
+    assert res["payment_method"] == "card"`,
+            explanation: "Regression test verifying safe error handling for missing paymentMethod.",
+            related_finding: "Unhandled AttributeError on request.get('paymentMethod')",
+            confidence: 0.99,
+          },
+        ],
+        missing_information: [],
+        overall_confidence: 0.99,
+      },
+      test_result_analysis: {
+        summary: "Automated regression verification passed. 2 passed, 0 failed in 0.04s. Null pointer eliminated.",
+        passed_count: 2,
+        failed_count: 0,
+        skipped_count: 0,
+        incident_relevance: "Direct validation for INC-8490",
+        confidence: 0.99,
+      },
+      stage_status: {
+        diagnosis: { status: "succeeded", duration_ms: 120 },
+        code_inspection: { status: "succeeded", duration_ms: 240 },
+        patch_generation: { status: "succeeded", duration_ms: 310 },
+        test_generation: { status: "succeeded", duration_ms: 190 },
+        test_result_analysis: { status: "succeeded", duration_ms: 80 },
+      },
+    },
+  },
+  {
     incident_id: "INC-8492",
     title: "PostgreSQL Pool Saturation",
     service: "postgres-db",
@@ -101,6 +257,7 @@ export const MOCK_INCIDENTS = [
     updated_at: "2026-11-12T16:22:10Z",
     duration: "43m",
     remediation_id: "REM-301",
+    has_code_patch: true,
     evidence: {
       incident_id: "INC-8492",
       service: "postgres-db",
@@ -138,11 +295,11 @@ export const MOCK_INCIDENTS = [
         "PostgreSQL pg_locks table indicates uncommitted row-level locks on payments_ledger table",
         "Zero hardware disk I/O bottlenecks detected; issue is purely connection descriptor exhaustion",
       ],
-      recommended_action: "drain_and_restart_worker_pool",
-      remediation_title: "Drain Stale DB Sessions & Restart Payment Worker Pods",
+      recommended_action: "apply_code_patch",
+      remediation_title: "Drain Stale DB Sessions & Patch Worker Connection Lifecycle",
       risk_level: "high", // low, medium, high, critical
       requires_approval: true,
-      suggested_command: "pg_terminate_backend(pid) FOR idle > 90s; docker restart sentinel_payment_worker_1",
+      suggested_command: "pg_terminate_backend(pid) FOR idle > 90s; git apply patches/worker_session_cleanup.diff",
       impact_assessment: "Brief 10-second processing pause for asynchronous payments. Zero data loss. Restores API Gateway throughput to 100%.",
       safety_policy_passed: true,
       verified_facts: [
@@ -156,6 +313,81 @@ export const MOCK_INCIDENTS = [
         { label: "DDoS Traffic Spike", probability: 0.08, status: "rejected", reason: "Ingress request volume within normal 30-day baseline" },
         { label: "Unclosed DB Sessions", probability: 0.94, status: "confirmed", reason: "Correlated to payment-worker v3.1.2 git commit #a8f9c1" },
       ],
+      code_inspection: {
+        findings: [
+          {
+            file_path: "demo-application/worker/main.py",
+            start_line: 34,
+            end_line: 48,
+            severity: "high",
+            title: "Unclosed Database Session in Background Poller",
+            description: "Worker allocates database sessions without try...finally cleanup. Network timeouts cause connection slot leaks until pool reaches 100% capacity.",
+            evidence: ["db = SessionLocal()", "check_database_health(db)"],
+            recommendation: "Enclose database session lifecycle in a try...finally block ensuring db.close() runs.",
+            confidence: 0.94,
+          },
+        ],
+        files_inspected: ["demo-application/worker/main.py"],
+        missing_information: [],
+      },
+      patch_generation: {
+        patches: [
+          {
+            file_path: "demo-application/worker/main.py",
+            unified_diff: `--- a/worker/main.py
++++ b/worker/main.py
+@@ -34,5 +34,9 @@
+-    db = SessionLocal()
+-    check_database_health(db)
++    db = SessionLocal()
++    try:
++        check_database_health(db)
++    finally:
++        db.close()`,
+            explanation: "Guarantees session cleanup upon loop termination or network error, freeing slots back to pool.",
+            related_finding: "Unclosed Database Session in Background Poller",
+            confidence: 0.95,
+          },
+        ],
+        missing_information: [],
+        overall_confidence: 0.95,
+      },
+      test_generation: {
+        tests: [
+          {
+            file_path: "tests/test_worker_session.py",
+            test_framework: "pytest",
+            test_code: `def test_worker_session_closed_on_error():
+    from unittest.mock import MagicMock
+    db = MagicMock()
+    try:
+        raise ConnectionError("Lost DB connection")
+    finally:
+        db.close()
+    db.close.assert_called_once()`,
+            explanation: "Validates session is closed even when queries encounter errors.",
+            related_finding: "Unclosed Database Session in Background Poller",
+            confidence: 0.96,
+          },
+        ],
+        missing_information: [],
+        overall_confidence: 0.96,
+      },
+      test_result_analysis: {
+        summary: "Verified connection cleanup with mocked DB pool. All 1 tests passed.",
+        passed_count: 1,
+        failed_count: 0,
+        skipped_count: 0,
+        incident_relevance: "Direct validation for INC-8492",
+        confidence: 0.98,
+      },
+      stage_status: {
+        diagnosis: { status: "succeeded", duration_ms: 180 },
+        code_inspection: { status: "succeeded", duration_ms: 220 },
+        patch_generation: { status: "succeeded", duration_ms: 290 },
+        test_generation: { status: "succeeded", duration_ms: 160 },
+        test_result_analysis: { status: "succeeded", duration_ms: 90 },
+      },
     },
   },
   {
@@ -317,11 +549,62 @@ export const MOCK_INCIDENTS = [
 
 export const MOCK_REMEDIATIONS = [
   {
+    remediation_id: "REM-300",
+    incident_id: "INC-8490",
+    target_service: "api",
+    action_type: "apply_code_patch",
+    title: "Apply Defensive Null Check Patch in handle_checkout()",
+    risk_level: "medium", // low, medium, high, critical
+    status: "awaiting_approval", // pending_approval, approved, rejected, executing, completed, failed, rolled_back
+    requires_approval: true,
+    dry_run: true,
+    approval_notes: null,
+    operator: null,
+    created_at: "2026-11-13T17:20:00Z",
+    target_file: "sample_checkout/checkout.py",
+    reason: "Patch validates request.get('paymentMethod') is a non-empty string before calling .lower(), eliminating unhandled AttributeError and HTTP 500 crashes during checkout.",
+    expected_impact: "Instantly restores successful order placement on live storefront. Zero dropped transactions and zero downtime.",
+    evidence_summary: "AttributeError traceback pointing directly to line 9 of sample_checkout/checkout.py.",
+    suggested_command: "git apply patches/checkout_null_safety.diff && pytest tests/test_checkout_regression.py",
+    diff: `--- a/checkout.py
++++ b/checkout.py
+@@ -6,7 +6,10 @@
+ 
+ def handle_checkout(request: dict) -> dict:
+     """Validate a checkout request and return a simulated checkout result."""
+-    payment_method = request.get("paymentMethod").lower()
++    raw_method = request.get("paymentMethod")
++    if not isinstance(raw_method, str) or not raw_method.strip():
++        return {"status": "error", "message": "Invalid or missing payment method"}
++    payment_method = raw_method.strip().lower()
+ 
+     if payment_method not in SUPPORTED_PAYMENT_METHODS:
+         return {`,
+    code_patch: {
+      file_path: "sample_checkout/checkout.py",
+      explanation: "Safely guards against None and non-string values before calling lower(), returning a structured 400 response with descriptive error instead of an unhandled HTTP 500 crash.",
+    },
+    safety_checks: [
+      { check: "Syntax & AST compile verification", passed: true, detail: "Python AST compiled cleanly with 0 syntax errors" },
+      { check: "Regression test suite", passed: true, detail: "Generated pytest suite (2 tests) passed in sandbox" },
+      { check: "Rollback snapshot armed", passed: true, detail: "Git SHA-1 commit hash preserved for instantaneous rollback" },
+      { check: "Medium-risk approval gate", passed: false, detail: "Requires operator confirmation before patch application" },
+    ],
+    timeline: [
+      { step: "Detection", time: "17:15:30", status: "completed", description: "Telemetry breach: 500 error on checkout" },
+      { step: "AI Code Inspection", time: "17:16:10", status: "completed", description: "Ollama/Gemini located null dereference in checkout.py:9" },
+      { step: "Patch & Test Generation", time: "17:17:00", status: "completed", description: "Generated unified diff and pytest regression tests" },
+      { step: "Pre-Flight Dry Run", time: "17:18:20", status: "completed", description: "Simulated patch application: exit code 0" },
+      { step: "Awaiting Operator Sign-off", time: "17:20:00", status: "active", description: "Holding for human on-call operator review" },
+      { step: "Remediation Execution", time: "Pending", status: "pending", description: "Apply patch and reload API" },
+    ],
+  },
+  {
     remediation_id: "REM-301",
     incident_id: "INC-8492",
     target_service: "postgres-db",
-    action_type: "drain_and_restart_worker_pool",
-    title: "Drain Stale DB Sessions & Restart Payment Worker",
+    action_type: "apply_code_patch",
+    title: "Drain Stale DB Sessions & Patch Worker Connection Lifecycle",
     risk_level: "high", // low, medium, high, critical
     status: "awaiting_approval", // pending_approval, approved, rejected, executing, completed, failed, rolled_back
     requires_approval: true,
@@ -329,10 +612,21 @@ export const MOCK_REMEDIATIONS = [
     approval_notes: null,
     operator: null,
     created_at: "2026-11-12T16:20:00Z",
+    target_file: "worker/main.py",
     reason: "Pool slots 99% exhausted by stale payment-worker sessions. Terminating idle transactions and recycling workers clears pressure.",
     expected_impact: "Frees 80+ connection slots in 15s. Clears gateway 504 timeouts. 10s queue pause on async billing.",
     evidence_summary: "142 idle-in-transaction connections pinned to sentinel_payment_worker_1 container.",
-    suggested_command: "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle in transaction' AND query_start < NOW() - INTERVAL '90 seconds';\ndocker restart sentinel_payment_worker_1",
+    suggested_command: "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle in transaction' AND query_start < NOW() - INTERVAL '90 seconds';\ngit apply patches/worker_session_cleanup.diff",
+    diff: `--- a/worker/main.py
++++ b/worker/main.py
+@@ -34,5 +34,9 @@
+-    db = SessionLocal()
+-    check_database_health(db)
++    db = SessionLocal()
++    try:
++        check_database_health(db)
++    finally:
++        db.close()`,
     safety_checks: [
       { check: "Dry-run script syntax validation", passed: true, detail: "SQL and docker commands parsed with 0 errors" },
       { check: "Active read/write lock impact simulation", passed: true, detail: "Targets only sessions idle > 90s, active transactions excluded" },

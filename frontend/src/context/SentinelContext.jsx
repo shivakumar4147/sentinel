@@ -50,9 +50,13 @@ export function SentinelProvider({ children }) {
     }
   }, []);
 
-  // Initial load
+  // Initial load and periodic background polling
   useEffect(() => {
     fetchData();
+    const intervalId = setInterval(() => {
+      fetchData(true);
+    }, 5000);
+    return () => clearInterval(intervalId);
   }, [fetchData]);
 
   // Toggle Mock Mode
@@ -173,6 +177,113 @@ export function SentinelProvider({ children }) {
     }
   };
 
+  const [liveStoreStatus, setLiveStoreStatus] = useState(null);
+
+  // Load live store status
+  const fetchLiveStoreStatus = useCallback(async () => {
+    try {
+      const status = await SentinelAPI.getLiveStoreStatus();
+      setLiveStoreStatus(status);
+    } catch (e) {
+      console.warn('Failed to query live store status:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLiveStoreStatus();
+    const storeIntervalId = setInterval(() => {
+      fetchLiveStoreStatus();
+    }, 5000);
+    return () => clearInterval(storeIntervalId);
+  }, [fetchLiveStoreStatus]);
+
+  // Apply Code Patch directly
+  const applyCodePatch = async (remediationId, patchId = null) => {
+    try {
+      const res = await SentinelAPI.applyCodePatch(remediationId, patchId);
+      addToast({
+        type: 'success',
+        title: 'AI Code Patch Applied & Verified',
+        message: 'Diff safely merged. Automated regression suite executed and passed.',
+      });
+      await fetchData(true);
+      await fetchLiveStoreStatus();
+      return res;
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Patch Application Error',
+        message: err.message,
+      });
+      throw err;
+    }
+  };
+
+  // Run verification test for a generated patch
+  const runVerificationTest = async (incidentId, testId = null) => {
+    try {
+      const res = await SentinelAPI.runVerificationTest(incidentId, testId);
+      addToast({
+        type: 'success',
+        title: 'Regression Suite Passed',
+        message: `${res.passed_count} unit tests passed in ${res.duration_seconds}s.`,
+      });
+      return res;
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Test Verification Failed',
+        message: err.message,
+      });
+      throw err;
+    }
+  };
+
+  // Set live store chaos scenario
+  const setLiveStoreScenario = async (scenario) => {
+    try {
+      const res = await SentinelAPI.setLiveStoreScenario(scenario);
+      await fetchLiveStoreStatus();
+      await fetchData(true);
+      addToast({
+        type: scenario === 'normal' || scenario === 'reset' ? 'success' : 'warning',
+        title: scenario === 'normal' || scenario === 'reset' ? 'Target System Normalized' : 'Failure Scenario Injected',
+        message: `Veloura Parfums Storefront updated to scenario: ${scenario}`,
+      });
+      return res;
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Scenario Update Failed',
+        message: err.message,
+      });
+      throw err;
+    }
+  };
+
+  // Simulate live checkout
+  const simulateLiveCheckout = async (payload) => {
+    try {
+      const res = await SentinelAPI.simulateCheckout(payload);
+      addToast({
+        type: 'success',
+        title: 'Checkout Succeeded',
+        message: `Order #${res.order_id} placed successfully on Veloura Parfums!`,
+      });
+      await fetchLiveStoreStatus();
+      return res;
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Checkout Failed (HTTP 500)',
+        message: err.message || 'AttributeError during checkout request.',
+      });
+      await fetchLiveStoreStatus();
+      await fetchData(true);
+      throw err;
+    }
+  };
+
   // Operator/System Executes Remediation
   const executeRemediation = async (remediationId) => {
     try {
@@ -225,6 +336,12 @@ export function SentinelProvider({ children }) {
         rejectRemediation,
         reviseRemediation,
         executeRemediation,
+        liveStoreStatus,
+        fetchLiveStoreStatus,
+        applyCodePatch,
+        runVerificationTest,
+        setLiveStoreScenario,
+        simulateLiveCheckout,
       }}
     >
       {children}

@@ -1,7 +1,7 @@
 """Pydantic request and response schemas for Sentinel API."""
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 
@@ -30,6 +30,11 @@ class AIInvestigationResponse(BaseModel):
     recommended_action: str = Field(..., examples=["check_database_connectivity"])
     risk_level: str = Field(..., examples=["medium"])
     requires_approval: bool = Field(..., examples=[True])
+    code_inspection: Optional[Dict[str, Any]] = None
+    patch_generation: Optional[Dict[str, Any]] = None
+    test_generation: Optional[Dict[str, Any]] = None
+    test_result_analysis: Optional[Dict[str, Any]] = None
+    stage_status: Optional[Dict[str, Any]] = None
 
 
 # --- Three-State Investigation Schemas ---
@@ -211,7 +216,7 @@ class IncidentDetailResponse(BaseModel):
     severity: str
     summary: str
     evidence: AIIncidentInput
-    investigation: Optional[AIInvestigationResponse] = None
+    investigation: Optional[Union[AIInvestigationResponse, Dict[str, Any]]] = None
     remediation_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -243,6 +248,9 @@ class RemediationActionStatus(BaseModel):
     approval_notes: Optional[str] = None
     output: Optional[str] = None
     created_at: datetime
+    code_patch: Optional[Dict[str, Any]] = None
+    diff: Optional[str] = None
+    target_file: Optional[str] = None
 
 
 class VerificationResponse(BaseModel):

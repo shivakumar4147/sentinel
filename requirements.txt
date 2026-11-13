@@ -1,0 +1,29 @@
+# Sentinel Incident Response Platform - Master Requirements
+# Core Framework & Server
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+
+# Schemas & Settings
+pydantic>=2.7.0
+pydantic-settings>=2.2.0
+
+# Database & Telemetry
+sqlalchemy>=2.0.30
+pg8000>=1.31.0
+prometheus-client>=0.20.0
+
+# AI & LLM Clients
+google-genai>=1.0.0
+groq>=0.9.0
+ollama>=0.2.0
+
+# Networking & Container Runtime
+httpx>=0.27.0
+requests>=2.32.0
+python-dotenv>=1.0.1
+docker>=7.1.0
+
+# Testing & Verification
+pytest>=8.2.0
+pytest-asyncio>=0.23.0
+

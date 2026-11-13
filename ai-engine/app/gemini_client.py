@@ -16,7 +16,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
-DEFAULT_TIMEOUT_MS = 120000
+DEFAULT_TIMEOUT_MS = 5000
 
 T = TypeVar("T", bound=BaseModel)
 

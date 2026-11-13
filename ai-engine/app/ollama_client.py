@@ -37,7 +37,7 @@ def generate_response(prompt: str) -> IncidentDiagnosis:
     response = requests.post(
         OLLAMA_URL,
         json=payload,
-        timeout=600
+        timeout=3
     )
 
     response.raise_for_status()

@@ -7,6 +7,32 @@ from app.schemas import VerificationResponse
 router = APIRouter(tags=["Remediation"])
 
 
+@router.get("/remediations")
+def get_remediations():
+    """Lists all remediation plans and hotfix statuses from the control plane."""
+    remediations = incident_manager.get_all_remediations()
+    return {
+        "success": True,
+        "remediations": remediations,
+        "total": len(remediations),
+    }
+
+
+@router.get("/remediations/{remediation_id}")
+def get_remediation(remediation_id: str):
+    """Retrieves single remediation plan details."""
+    rem = incident_manager.get_remediation(remediation_id)
+    if not rem:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Remediation '{remediation_id}' not found.",
+        )
+    return {
+        "success": True,
+        "remediation": rem,
+    }
+
+
 @router.post("/remediations/{remediation_id}/execute")
 def execute_remediation(remediation_id: str):
     """Executes an approved or whitelisted automated remediation action."""

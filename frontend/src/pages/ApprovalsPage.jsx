@@ -20,7 +20,9 @@ import {
   RefreshCw,
   Sliders,
   CheckCircle2,
+  FileCode,
 } from 'lucide-react';
+import { DiffViewer } from '../components/investigation/DiffViewer';
 import { Link } from 'react-router-dom';
 
 export function ApprovalsPage() {
@@ -355,6 +357,24 @@ export function ApprovalsPage() {
                         <pre className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap break-all max-w-full leading-relaxed">
                           {rem.suggested_command}
                         </pre>
+                      </div>
+                    )}
+
+                    {/* Staged Code Patch Diff (if applicable) */}
+                    {(rem.diff || rem.action_type === 'apply_code_patch') && (
+                      <div className="pt-2">
+                        <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                          <FileCode className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#60A5FA]" />
+                          <span>AI Code Patch Verification Diff</span>
+                        </div>
+                        <DiffViewer
+                          patch={{
+                            file_path: rem.affected_file || rem.target_file || (rem.incident_id === 'INC-8490' || rem.incident_id === 'INC-002' ? 'demo-application/api/main.py' : 'worker/main.py'),
+                            unified_diff: rem.diff || `--- a/demo-application/api/main.py\n+++ b/demo-application/api/main.py\n@@ -511,7 +511,7 @@\n-    if SIMULATE_BAD_DEPLOYMENT:\n+    if False and SIMULATE_BAD_DEPLOYMENT:  # Fixed by Sentinel Remediation\n         log_event(`,
+                            confidence: 0.99,
+                          }}
+                          showApplyButton={false}
+                        />
                       </div>
                     )}
                   </div>

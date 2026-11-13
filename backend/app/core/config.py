@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./sentinel.db")
 
+    # Sentinel AI Investigation Engine
+    AI_ENGINE_URL: str = os.getenv("AI_ENGINE_URL", "http://localhost:8001")
+    AI_ENGINE_TIMEOUT_SECONDS: int = int(os.getenv("AI_ENGINE_TIMEOUT_SECONDS", "30"))
+
     # Ollama AI Engine
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3:latest")
@@ -47,6 +51,7 @@ class Settings(BaseSettings):
         "scale_replicas",
         "clear_cache",
         "isolate_traffic",
+        "apply_code_patch",
     ]
 
     # Target Service Allowlist for Remediation
@@ -55,6 +60,14 @@ class Settings(BaseSettings):
         "api",
         "sentinel-demo-api",
         "demo_application",
+        "postgres-db",
+        "payment-worker",
+        "worker",
+        "database",
+        "ecommerce-api",
+        "sentinel-ecommerce-api",
+        "sentinel-ecommerce-db",
+        "sentinel-ecommerce-worker",
     ]
 
     # Remediation Execution Safety Parameters

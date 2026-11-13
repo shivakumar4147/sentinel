@@ -14,6 +14,7 @@ import { ApprovalsPage } from './pages/ApprovalsPage';
 import { RemediationPage } from './pages/RemediationPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LiveWebsitePage } from './pages/LiveWebsitePage';
 
 export function App() {
   return (
@@ -27,6 +28,7 @@ export function App() {
                 <Route path="services" element={<ServicesPage />} />
                 <Route path="incidents" element={<IncidentsPage />} />
                 <Route path="investigation" element={<InvestigationPage />} />
+                <Route path="live-target" element={<LiveWebsitePage />} />
                 <Route path="approvals" element={<ApprovalsPage />} />
                 <Route path="remediation" element={<RemediationPage />} />
                 <Route path="audit-logs" element={<AuditLogsPage />} />

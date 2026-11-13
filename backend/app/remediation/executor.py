@@ -78,6 +78,9 @@ class RemediationExecutor:
         timeout_seconds: Optional[int] = None,
         max_retries: Optional[int] = None,
         cooldown_seconds: Optional[int] = None,
+        diff: Optional[str] = None,
+        target_file: Optional[str] = None,
+        **extra_kwargs: Any,
     ) -> Dict[str, Any]:
         """Validates safety and executes the whitelisted remediation action with full safety guards."""
         target_clean = (target_service or "").strip().lower()
@@ -221,13 +224,27 @@ class RemediationExecutor:
             )
 
             try:
+                import inspect
+                sig = inspect.signature(handler)
+                call_args: Dict[str, Any] = {
+                    "target": target_service,
+                    "dry_run": effective_dry_run,
+                    "connector": self.connector,
+                }
+                if "diff" in sig.parameters:
+                    call_args["diff"] = diff
+                if "target_file" in sig.parameters:
+                    call_args["target_file"] = target_file
+                if "remediation_id" in sig.parameters:
+                    call_args["remediation_id"] = remediation_id
+                if "incident_id" in sig.parameters:
+                    call_args["incident_id"] = incident_id
+                for k, v in extra_kwargs.items():
+                    if k in sig.parameters:
+                        call_args[k] = v
+
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    future = pool.submit(
-                        handler,
-                        target=target_service,
-                        dry_run=effective_dry_run,
-                        connector=self.connector,
-                    )
+                    future = pool.submit(handler, **call_args)
                     result = future.result(timeout=float(effective_timeout))
             except concurrent.futures.TimeoutError:
                 logger.error(
