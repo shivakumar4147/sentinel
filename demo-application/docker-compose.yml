@@ -17,6 +17,8 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    networks:
+      - sentinel_sentinel-net
 
   api:
     build:
@@ -28,11 +30,13 @@ services:
       DEMO_USER_EMAIL: admin@example.com
       DEMO_USER_PASSWORD: sentinel123
     ports:
-      - "8000:5000"
+      - "5001:5000"
     depends_on:
       database:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - sentinel_sentinel-net
 
   worker:
     build:
@@ -46,18 +50,8 @@ services:
       database:
         condition: service_healthy
     restart: unless-stopped
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: sentinel-ecommerce-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    depends_on:
-      - api
-    restart: unless-stopped
+    networks:
+      - sentinel_sentinel-net
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
@@ -74,6 +68,8 @@ services:
     devices:
       - /dev/kmsg
     restart: unless-stopped
+    networks:
+      - sentinel_sentinel-net
 
   frontend:
     build:
@@ -85,7 +81,12 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+    networks:
+      - sentinel_sentinel-net
 
 volumes:
   postgres_data:
-  prometheus_data:
+
+networks:
+  sentinel_sentinel-net:
+    external: true
