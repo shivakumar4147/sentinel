@@ -11,6 +11,7 @@ import {
   Settings,
   Shield,
   Layers,
+  LogOut,
 } from 'lucide-react';
 import { useSentinel } from '../context/SentinelContext';
 
@@ -146,7 +147,7 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
           </nav>
         </div>
 
-        {/* Bottom: Settings Squircle & System Avatar */}
+        {/* Bottom: Settings & Logout Squircles (Matching Reference Image Dock) */}
         <div className="flex flex-col items-center gap-3 w-full px-3 pt-3 border-t border-[#E5E5EA] dark:border-white/[0.07]">
           {/* Settings NavLink */}
           <NavLink
@@ -166,13 +167,21 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
             </span>
           </NavLink>
 
-          {/* User Avatar Squircle */}
-          <div className="w-10 h-10 rounded-[16px] bg-gradient-to-tr from-[#8B5CF6] to-[#C4B5FD] flex items-center justify-center text-xs font-bold text-[#0A0B10] shadow-sm select-none cursor-pointer group relative">
-            DS
+          {/* Logout Squircle Action Button */}
+          <button
+            onClick={() => {
+              if (window.confirm('Disconnect session from Sentinel Core?')) {
+                window.location.reload();
+              }
+            }}
+            className="w-12 h-12 rounded-[18px] flex items-center justify-center text-slate-400 dark:text-[#8E95A5] hover:text-[#E11D48] dark:hover:text-[#FF6363] hover:bg-red-50 dark:hover:bg-red-950/20 transition-all relative group cursor-pointer"
+            title="Disconnect session"
+          >
+            <LogOut className="w-5 h-5" />
             <span className="pointer-events-none absolute left-16 z-50 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs font-semibold shadow-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap">
-              Darrell Steward (On-Call SRE)
+              Logout Session
             </span>
-          </div>
+          </button>
         </div>
       </aside>
     </>
