@@ -337,6 +337,129 @@ const REVIEWS = [
 ];
 
 // ---------------------------------------------------------------------------
+// SIMULATED ERROR PARSER
+// Analyzes checkout API responses & errors to extract the exact simulation name
+// ---------------------------------------------------------------------------
+
+const parseSimulationError = (status, data, errorObj) => {
+  const detail = (data && data.detail) || (errorObj && errorObj.message) || "";
+  const detailStr = String(detail);
+  const detailLower = detailStr.toLowerCase();
+
+  // 1. HTTP 500 / Bad Deployment Rollout Simulation
+  if (
+    status === 500 ||
+    detailLower.includes("deployment") ||
+    detailLower.includes("rollout") ||
+    detailLower.includes("internal")
+  ) {
+    return {
+      statusCode: 500,
+      badgeText: "HTTP 500 · INTERNAL SERVER ERROR",
+      title: "There was an Internal Server Error",
+      scenario: "Bad Deployment Simulation (Rollout Failure)",
+      desc: "The server encountered an unexpected internal error during the deployment rollout simulation.",
+      serverDetail: detailStr || "Simulated bad deployment: checkout service failed",
+      sentinelAlert: "Sentinel incident detected on /checkout. HTTP 5xx error rate spike logged.",
+    };
+  }
+
+  // 2. HTTP 503 / Database or service failure
+  if (
+    status === 503 ||
+    detailLower.includes("database") ||
+    detailLower.includes("temporarily unavailable") ||
+    detailLower.includes("postgres")
+  ) {
+    return {
+      statusCode: 503,
+      badgeText: "HTTP 503 · SERVICE UNAVAILABLE",
+      title: "There was a Service Unavailable Error",
+      scenario: "Database Connection Pool Failure (PostgreSQL Down)",
+      desc: "The server is temporarily unable to handle the checkout request due to a database connection failure.",
+      serverDetail: detailStr || "Checkout temporarily unavailable",
+      sentinelAlert: "Sentinel incident detected on /checkout. Database health check failed.",
+    };
+  }
+
+  // 3. HTTP 504 / Gateway Timeout / High CPU load
+  if (
+    status === 504 ||
+    detailLower.includes("timeout") ||
+    detailLower.includes("gateway")
+  ) {
+    return {
+      statusCode: 504,
+      badgeText: "HTTP 504 · GATEWAY TIMEOUT",
+      title: "There was a Gateway Timeout Error",
+      scenario: "Resource Exhaustion (High CPU Stress Simulation)",
+      desc: "The upstream checkout service timed out while handling the transaction under heavy simulated load.",
+      serverDetail: detailStr || "Gateway Timeout: upstream service did not respond in time",
+      sentinelAlert: "Sentinel incident detected on /checkout. Latency threshold exceeded.",
+    };
+  }
+
+  // 4. HTTP 400 / Insufficient stock / Bad Request
+  if (
+    status === 400 ||
+    detailLower.includes("stock") ||
+    detailLower.includes("inventory")
+  ) {
+    return {
+      statusCode: 400,
+      badgeText: "HTTP 400 · BAD REQUEST",
+      title: "There was a Bad Request Error",
+      scenario: "Inventory Constraint (Insufficient Stock)",
+      desc: "The requested fragrance quantity exceeds currently available warehouse inventory stock.",
+      serverDetail: detailStr || "Insufficient stock",
+      sentinelAlert: "Sentinel telemetry recorded client validation constraint on /checkout.",
+    };
+  }
+
+  // 5. HTTP 404 / Product Not Found
+  if (status === 404 || detailLower.includes("not found")) {
+    return {
+      statusCode: 404,
+      badgeText: "HTTP 404 · NOT FOUND",
+      title: "There was a Not Found Error",
+      scenario: "Product Catalog Mismatch (Item Not Found)",
+      desc: "The selected fragrance could not be located in the catalog database.",
+      serverDetail: detailStr || "Product not found",
+      sentinelAlert: "Sentinel telemetry recorded missing catalog item on /checkout.",
+    };
+  }
+
+  // 6. Network failure / Connection refused / Service container offline
+  if (
+    detailLower.includes("fetch") ||
+    detailLower.includes("network") ||
+    detailLower.includes("failed to fetch") ||
+    status === 0
+  ) {
+    return {
+      statusCode: 0,
+      badgeText: "NETWORK ERROR · CONNECTION REFUSED",
+      title: "There was a Connection Failure",
+      scenario: "Service Offline / Container Stopped",
+      desc: "Unable to reach the checkout API server. The container may be offline or restarting.",
+      serverDetail: detailStr || "Failed to fetch from /api/checkout",
+      sentinelAlert: "Sentinel incident detected on /checkout. Backend service unreachable.",
+    };
+  }
+
+  // Fallback
+  return {
+    statusCode: status || 500,
+    badgeText: status ? `HTTP ${status} · ERROR` : "SIMULATION ERROR",
+    title: `There was an HTTP ${status || 500} Error`,
+    scenario: "Automated Incident Simulation",
+    desc: "An unexpected error occurred during the checkout transaction.",
+    serverDetail: detailStr || "Checkout operation failed",
+    sentinelAlert: "Sentinel incident detected on /checkout.",
+  };
+};
+
+// ---------------------------------------------------------------------------
 // MAIN APPLICATION COMPONENT
 // ---------------------------------------------------------------------------
 
@@ -451,22 +574,34 @@ function App() {
 
     try {
       for (const item of cart) {
-        const response = await fetch("/api/checkout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            product_id: item.backendProductId || backendIds[item.id],
-            quantity: item.quantity,
-            user_email: "guest@velouraparfums.com",
-          }),
-        });
+        let response;
+        try {
+          response = await fetch("/api/checkout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              product_id: item.backendProductId || backendIds[item.id],
+              quantity: item.quantity,
+              user_email: "guest@velouraparfums.com",
+            }),
+          });
+        } catch (fetchErr) {
+          const netErr = parseSimulationError(0, null, fetchErr);
+          throw netErr;
+        }
 
-        const result = await response.json();
+        let result = null;
+        try {
+          result = await response.json();
+        } catch {
+          result = null;
+        }
 
         if (!response.ok) {
-          throw new Error(result.detail || `HTTP ${response.status}`);
+          const parsed = parseSimulationError(response.status, result, null);
+          throw parsed;
         }
 
         successfulOrders.push(result);
@@ -475,6 +610,7 @@ function App() {
 
       setCart([]);
       setCheckoutSuccess(true);
+      setCheckoutError(null);
 
       showToast(
         `Order placed successfully! Order IDs: ${successfulOrders
@@ -484,12 +620,12 @@ function App() {
     } catch (err) {
       console.error("Checkout execution error:", err);
 
-      setCheckoutError(
-        `${err.message}. ${successfulOrders.length > 0
-          ? "Some items were already ordered."
-          : "No items were confirmed as ordered."
-        }`
-      );
+      const formattedError =
+        err && err.badgeText
+          ? err
+          : parseSimulationError(err?.status || 0, null, err);
+
+      setCheckoutError(formattedError);
 
       // Remove only the items that were successfully ordered.
       setCart((current) =>
@@ -955,7 +1091,7 @@ function App() {
               className="promo-shop-sale-btn"
               onClick={() => {
                 setDiscountApplied(true);
-                showToast("✨ 20% discount code VELOURA20 applied!");
+                showToast("20% discount code VELOURA20 applied!");
                 setIsCartOpen(true);
               }}
             >
@@ -1050,7 +1186,7 @@ function App() {
               e.preventDefault();
               if (emailInput.includes("@")) {
                 setNewsletterSubscribed(true);
-                showToast("✨ Welcome to the Veloura Circle!");
+                showToast("Welcome to the Veloura Circle!");
                 setEmailInput("");
               }
             }}
@@ -1217,7 +1353,7 @@ function App() {
             {/* Free Shipping Tracker */}
             <div className="shipping-progress-banner">
               {subtotal >= freeShippingThreshold ? (
-                <span>✨ You've unlocked <strong>Complimentary Shipping!</strong></span>
+                <span>You've unlocked <strong>Complimentary Shipping!</strong></span>
               ) : (
                 <span>
                   Add <strong>${(freeShippingThreshold - subtotal).toFixed(2)}</strong> more for Complimentary Shipping
@@ -1296,7 +1432,7 @@ function App() {
                     className="apply-20-code"
                     onClick={() => {
                       setDiscountApplied(true);
-                      showToast("✨ 20% discount code applied!");
+                      showToast("20% discount code applied!");
                     }}
                   >
                     {discountApplied ? "✓ 20% SALE APPLIED" : "Apply 20% OFF (VELOURA20)"}
@@ -1324,20 +1460,77 @@ function App() {
                   </div>
                 </div>
 
-                {/* Checkout Error notification */}
+                {/* Concise Checkout Error notification */}
                 {checkoutError && (
-                  <div className="checkout-alert-box error">
-                    <strong>⚠️ Checkout Alert</strong>
-                    <p>{checkoutError}</p>
-                    <small>Sentinel incident detected on /checkout</small>
+                  <div className="concise-alert-card error" role="alert">
+                    <div className="concise-alert-header">
+                      <span className="concise-status-tag">
+                        {checkoutError.badgeText || "SIMULATION ERROR"}
+                      </span>
+                      <button
+                        type="button"
+                        className="concise-dismiss-btn"
+                        onClick={() => setCheckoutError(null)}
+                        title="Dismiss notification"
+                        aria-label="Dismiss error"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="concise-alert-title">
+                      {checkoutError.title || "Checkout Simulation Error"}
+                    </div>
+
+                    <div className="concise-scenario-row">
+                      <span className="concise-scenario-label">Simulated Scenario:</span>{" "}
+                      <span className="concise-scenario-value">
+                        {checkoutError.scenario || "Incident Simulation Active"}
+                      </span>
+                    </div>
+
+                    <p className="concise-alert-desc">
+                      {checkoutError.desc || "The server encountered an error during checkout."}
+                    </p>
+
+                    {checkoutError.serverDetail && (
+                      <div className="concise-response-row">
+                        <span className="concise-response-label">SERVER RESPONSE:</span>
+                        <code className="concise-response-code">
+                          "{checkoutError.serverDetail}"
+                        </code>
+                      </div>
+                    )}
+
+                    <div className="concise-sentinel-note">
+                      {checkoutError.sentinelAlert || "Sentinel incident detected on /checkout."}
+                    </div>
                   </div>
                 )}
 
-                {/* Checkout Success notification */}
+                {/* Concise Checkout Success notification */}
                 {checkoutSuccess && (
-                  <div className="checkout-alert-box success">
-                    <strong>✨ Order Confirmed</strong>
-                    <p>Your order has been received successfully. Check the notification for your actual order ID.</p>
+                  <div className="concise-alert-card success" role="status">
+                    <div className="concise-alert-header">
+                      <span className="concise-status-tag success">ORDER CONFIRMED</span>
+                      <button
+                        type="button"
+                        className="concise-dismiss-btn"
+                        onClick={() => setCheckoutSuccess(false)}
+                        title="Dismiss notification"
+                        aria-label="Dismiss message"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="concise-alert-title">
+                      Order Placed Successfully
+                    </div>
+
+                    <p className="concise-alert-desc">
+                      Your fragrance order has been received and confirmed. Sentinel telemetry indicates normal checkout operation.
+                    </p>
                   </div>
                 )}
 
