@@ -9,6 +9,9 @@ from google import genai
 from google.genai import types
 from google.genai.errors import APIError
 from pydantic import BaseModel, ValidationError
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
