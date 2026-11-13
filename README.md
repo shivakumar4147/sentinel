@@ -399,7 +399,6 @@ Planned development areas include:
 
 Sentinel is a development and research project focused on AI-assisted incident response and controlled remediation.
 
-The architecture and workflow described in this documentation represent the project's intended design. Individual components and end-to-end capabilities may be under development or require further validation.
+Individual components and end-to-end capabilities may be under development or require further validation.
 
-AI-generated remediation must be reviewed and validated before being applied to production systems.
 
