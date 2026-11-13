@@ -13,44 +13,44 @@ import { Link } from 'react-router-dom';
 export function OverviewPage() {
   const { incidents, remediations, auditLogs } = useSentinel();
 
-  const criticalIncidents = incidents.filter((i) => i.severity === 'critical' && i.status !== 'resolved').length;
+  const criticalInc = incidents.find((i) => i.severity === 'critical' && i.status !== 'resolved');
   const pendingApprovals = remediations.filter(
     (r) => r.status === 'awaiting_approval' || r.status === 'pending_approval' || r.status === 'changes_suggested'
   ).length;
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Action Required: Critical Warning Card matching reference image design */}
-      {criticalIncidents > 0 && (
+      {/* Action Required: Critical Warning Card dynamically derived from active incident */}
+      {criticalInc && (
         <div className="p-5 sm:p-6 rounded-2xl bg-[#161D2B] border border-red-500/40 ring-1 ring-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.28)] flex flex-col md:flex-row md:items-center justify-between gap-5 text-white transition-all">
           <div className="space-y-2 min-w-0 flex-1">
-            {/* Header: Bell icon + Title matching reference */}
+            {/* Header: Bell icon + Title matching active critical incident */}
             <div className="flex items-center gap-2.5">
               <Bell className="w-5 h-5 text-[#FF5B48] fill-[#FF5B48] flex-shrink-0" />
               <h3 className="font-bold text-base sm:text-lg text-white tracking-tight">
-                Action Required: INC-8492
+                Action Required: {criticalInc.incident_id}
               </h3>
             </div>
 
             {/* Description */}
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl pl-7.5">
-              Postgres pool at 99.4%. Remediation plan awaiting on-call sign-off.
+              {criticalInc.summary || criticalInc.title}
             </p>
 
-            {/* Tag pill + Metric matching the reference image */}
+            {/* Tag pill + Target Service */}
             <div className="flex items-center gap-3 pt-1 pl-7.5">
               <span className="bg-[#381B22] border border-[#5C232B] text-[#FF6363] text-[11px] font-bold uppercase px-3 py-0.5 rounded-full tracking-wider">
-                CRITICAL
+                {criticalInc.severity.toUpperCase()}
               </span>
               <span className="text-[#FF6363] font-bold font-mono text-sm sm:text-base tracking-tight">
-                +99.4%
+                {criticalInc.service}
               </span>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex items-center gap-3 flex-shrink-0 self-start md:self-center pl-7.5 md:pl-0">
-            <Link to="/investigation?id=INC-8492">
+            <Link to={`/investigation?id=${criticalInc.incident_id}`}>
               <button className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-[#222938] hover:bg-[#2C3547] text-white border border-slate-700/70 transition-all shadow-xs active:scale-[0.98] cursor-pointer">
                 <FileSearch className="w-3.5 h-3.5 flex-shrink-0 text-slate-300" />
                 AI Diagnosis

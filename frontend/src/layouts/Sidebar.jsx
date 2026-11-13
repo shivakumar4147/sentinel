@@ -177,14 +177,14 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
           <div className="p-2.5 rounded-xl bg-white dark:bg-[#131824] border border-gray-200/90 dark:border-[#232D42] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#1A2234] transition-colors flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#2563EB] to-[#60A5FA] flex items-center justify-center text-xs font-bold text-white shadow-2xs flex-shrink-0">
-                DS
+                OC
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">Darrell Steward</div>
-                <div className="text-[10px] text-slate-400 dark:text-slate-400 truncate">oncall@sentinel.internal</div>
+                <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">On-Call Operator</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-400 truncate">oncall-operator@sentinel.internal</div>
               </div>
             </div>
-            <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md cursor-pointer">
+            <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md cursor-pointer" aria-label="Operator options">
               <MoreVertical className="w-3.5 h-3.5" />
             </button>
           </div>

@@ -1,35 +1,60 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { useSentinel } from '../../context/SentinelContext';
 
 export function UnifiedKpiStrip() {
+  const { services, incidents, remediations } = useSentinel();
+
+  // Dynamically compute real SRE metrics from platform state
+  const totalServices = services.length;
+  const healthyServices = services.filter((s) => s.status === 'running' || s.health === 'healthy').length;
+  const degradedServices = totalServices - healthyServices;
+
+  const totalIncidents = incidents.length;
+  const resolvedIncidents = incidents.filter((i) => i.status === 'resolved').length;
+  const activeIncidents = totalIncidents - resolvedIncidents;
+  const recoveryRate = totalIncidents > 0 ? Math.round((resolvedIncidents / totalIncidents) * 100) : 100;
+
+  const criticalIncidents = incidents.filter((i) => i.severity === 'critical' && i.status !== 'resolved').length;
+  const avgErrorRate =
+    totalServices > 0
+      ? (services.reduce((acc, s) => acc + (Number(s.error_rate) || 0), 0) / totalServices).toFixed(1)
+      : '0.0';
+
+  const totalRemediations = remediations.length;
+  const autoExecuted = remediations.filter(
+    (r) => r.status === 'executed' || r.status === 'completed' || r.status === 'resolved'
+  ).length;
+  const autoRate = totalRemediations > 0 ? Math.round((autoExecuted / totalRemediations) * 100) : 100;
+
   const kpis = [
     {
       title: 'Monitored Fleet',
-      value: '4 Nodes',
-      trend: '0.5%',
-      isPositive: true,
-      subtitle: '4 Active Containers',
+      value: `${totalServices} Services`,
+      trend: `${healthyServices}/${totalServices} Active`,
+      isPositive: degradedServices === 0,
+      subtitle: degradedServices > 0 ? `${degradedServices} Service Degraded` : 'All Services Operational',
     },
     {
       title: 'Recovery Rate',
-      value: '86.84%',
-      trend: '1.7%',
-      isPositive: false,
-      subtitle: '33 Resolved (7d)',
+      value: `${recoveryRate}%`,
+      trend: `${resolvedIncidents} Resolved`,
+      isPositive: recoveryRate >= 75,
+      subtitle: `${activeIncidents} Active Incident${activeIncidents === 1 ? '' : 's'}`,
     },
     {
       title: 'Error Rate',
-      value: '2.63%',
-      trend: '2.3%',
-      isPositive: false,
-      subtitle: '1 Degraded (504s)',
+      value: `${avgErrorRate}%`,
+      trend: `${activeIncidents} Alerts`,
+      isPositive: Number(avgErrorRate) < 5,
+      subtitle: criticalIncidents > 0 ? `${criticalIncidents} Critical Severity` : 'Nominal Thresholds',
     },
     {
       title: 'Auto-Remediated',
-      value: '75.0%',
-      trend: '1.0%',
-      isPositive: true,
-      subtitle: '15 Actions Executed',
+      value: `${autoRate}%`,
+      trend: `${autoExecuted} Executed`,
+      isPositive: autoRate >= 50,
+      subtitle: `${totalRemediations} Actions Evaluated`,
     },
   ];
 

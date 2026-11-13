@@ -9,6 +9,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
+import { useSentinel } from '../../context/SentinelContext';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -35,14 +36,13 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export function ResourceUsageChart() {
   const { isDark } = useTheme();
+  const { services } = useSentinel();
 
-  const data = [
-    { category: 'postgres-db', throughput: 89, memory: 88 },
-    { category: 'payment-worker', throughput: 65, memory: 82 },
-    { category: 'auth-service', throughput: 32, memory: 38 },
-    { category: 'api-gateway', throughput: 74, memory: 68 },
-    { category: 'redis-cache', throughput: 42, memory: 52 },
-  ];
+  const data = (services || []).map((s) => ({
+    category: s.name,
+    throughput: Math.round(s.cpu_usage || 0),
+    memory: Math.round(s.memory_usage || 0),
+  }));
 
   return (
     <div className="p-5 flex flex-col h-full justify-between">
