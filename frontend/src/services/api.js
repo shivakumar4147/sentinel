@@ -262,20 +262,25 @@ export const SentinelAPI = {
   },
 
   /**
-   * Reject a pending remediation
+   * Reject a pending remediation or submit changes suggested
    * POST /api/remediations/{remediation_id}/reject
    */
-  async rejectRemediation(remediationId, reason = '', operator = 'oncall-operator') {
+  async rejectRemediation(remediationId, reason = '', operator = 'oncall-operator', suggestion = null) {
+    const isSuggestion = Boolean(suggestion || (reason && reason.toLowerCase().includes('suggestion')));
+    const newStatus = isSuggestion ? 'changes_suggested' : 'rejected';
+    const actualSuggestion = suggestion || (isSuggestion ? reason.replace(/^Rejected with suggestion:\s*/i, '') : null);
+
     if (isForceMock) {
-      await new Promise((res) => setTimeout(res, 500));
+      await new Promise((res) => setTimeout(res, 400));
       const remIndex = localRemediations.findIndex((r) => r.remediation_id === remediationId);
       if (remIndex === -1) throw new Error(`Remediation ${remediationId} not found`);
 
       const rem = localRemediations[remIndex];
       const updated = {
         ...rem,
-        status: "rejected",
-        rejection_reason: reason || "Rejected by operator",
+        status: newStatus,
+        rejection_reason: reason || (isSuggestion ? 'Changes Suggested by operator' : 'Rejected by operator'),
+        suggestion: actualSuggestion,
         operator,
         rejected_at: new Date().toISOString(),
       };
@@ -284,9 +289,9 @@ export const SentinelAPI = {
       localAuditLogs.unshift({
         id: `AUD-${Date.now().toString().slice(-4)}`,
         incident_id: rem.incident_id,
-        action: "remediation_rejected",
+        action: isSuggestion ? 'changes_suggested' : 'remediation_rejected',
         actor: operator,
-        details: { remediation_id: remediationId, reason },
+        details: { remediation_id: remediationId, reason, suggestion: actualSuggestion, status: newStatus },
         timestamp: new Date().toISOString(),
       });
 
@@ -296,13 +301,113 @@ export const SentinelAPI = {
     try {
       const data = await apiFetch(`/remediations/${remediationId}/reject`, {
         method: 'POST',
-        body: JSON.stringify({ operator, reason }),
+        body: JSON.stringify({
+          operator,
+          reason,
+          status: newStatus,
+          suggestion: actualSuggestion,
+        }),
       });
+      const rem = localRemediations.find((r) => r.remediation_id === remediationId);
+      if (rem) {
+        rem.status = newStatus;
+        rem.rejection_reason = reason;
+        rem.suggestion = actualSuggestion;
+      }
       return { ...data, isMock: false };
     } catch (err) {
       console.warn(`[SentinelAPI] rejectRemediation fallback:`, err.message);
       const rem = localRemediations.find((r) => r.remediation_id === remediationId);
-      if (rem) rem.status = "rejected";
+      if (rem) {
+        rem.status = newStatus;
+        rem.rejection_reason = reason;
+        rem.suggestion = actualSuggestion;
+      }
+      return { success: true, remediation: rem, isMock: true };
+    }
+  },
+
+  /**
+   * AI Revision Loop: Synthesize revised remediation plan based on operator suggestion
+   * POST /api/remediations/{remediation_id}/revise
+   */
+  async reviseRemediation(remediationId, suggestion = '', operator = 'oncall-operator') {
+    if (isForceMock) {
+      // Simulate backend AI reasoning delay
+      await new Promise((res) => setTimeout(res, 1200));
+      const remIndex = localRemediations.findIndex((r) => r.remediation_id === remediationId);
+      if (remIndex === -1) throw new Error(`Remediation ${remediationId} not found`);
+
+      const rem = localRemediations[remIndex];
+      const nextRev = (rem.revision || 1) + 1;
+
+      // Extract a clean snippet from operator suggestion
+      const cleanSuggestion = suggestion.trim();
+      const snippet = cleanSuggestion.length > 40 ? cleanSuggestion.slice(0, 37) + '...' : cleanSuggestion;
+
+      const revisedCommand = cleanSuggestion.toLowerCase().includes('scale')
+        ? `sentinel-ctl pool --scale-capacity=250 && ${rem.suggested_command}`
+        : cleanSuggestion.toLowerCase().includes('cache')
+        ? `redis-cli --eval /scripts/warm_cache.lua && ${rem.suggested_command}`
+        : `sentinel-ctl exec --strategy=progressive-backoff --params="${snippet}" && ${rem.suggested_command}`;
+
+      const history = rem.revision_history || [];
+      const updated = {
+        ...rem,
+        revision: nextRev,
+        is_revised: true,
+        status: 'awaiting_approval',
+        last_suggestion: cleanSuggestion,
+        title: `${rem.title.split(' (Rev')[0]} (Rev ${nextRev}: ${snippet})`,
+        reason: `Revised action plan synthesized by Sentinel AI based on operator feedback: "${cleanSuggestion}". Staged parameter adjustments and pre-flight mitigations validated against safety policies.`,
+        expected_impact: `Target latency recovery < 70ms. Operator strategy incorporated: zero dropped transactions with staged rollback barrier.`,
+        suggested_command: revisedCommand,
+        safety_checks: [
+          { check: 'Automated blast radius assessment', passed: true },
+          { check: 'Operator suggestion constraint validation', passed: true },
+          { check: 'Zero-downtime rolling barrier check', passed: true },
+          { check: 'Rollback point verified', passed: true },
+        ],
+        revision_history: [
+          ...history,
+          {
+            revision: nextRev,
+            operator,
+            suggestion: cleanSuggestion,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      };
+
+      localRemediations[remIndex] = updated;
+
+      localAuditLogs.unshift({
+        id: `AUD-${Date.now().toString().slice(-4)}`,
+        incident_id: rem.incident_id,
+        action: 'ai_remediation_revised',
+        actor: 'Sentinel-AI-Copilot',
+        details: { remediation_id: remediationId, revision: nextRev, operator_suggestion: cleanSuggestion },
+        timestamp: new Date().toISOString(),
+      });
+
+      return { success: true, remediation: updated, isMock: true };
+    }
+
+    try {
+      const data = await apiFetch(`/remediations/${remediationId}/revise`, {
+        method: 'POST',
+        body: JSON.stringify({ suggestion, operator }),
+      });
+      return { ...data, isMock: false };
+    } catch (err) {
+      console.warn(`[SentinelAPI] reviseRemediation fallback:`, err.message);
+      const rem = localRemediations.find((r) => r.remediation_id === remediationId);
+      if (rem) {
+        rem.revision = (rem.revision || 1) + 1;
+        rem.is_revised = true;
+        rem.status = 'awaiting_approval';
+        rem.last_suggestion = suggestion;
+      }
       return { success: true, remediation: rem, isMock: true };
     }
   },

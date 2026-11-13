@@ -53,14 +53,14 @@ export function ClusterTelemetryRow() {
         </h2>
         <Link
           to="/investigation?id=INC-8492"
-          className="text-xs font-bold text-[#6344F5] dark:text-[#A78BFA] hover:opacity-80 tracking-wider uppercase transition-opacity"
+          className="text-xs font-bold text-[#2563EB] dark:text-[#60A5FA] hover:opacity-80 tracking-wider uppercase transition-opacity"
         >
           INSPECT DIAGNOSTICS
         </Link>
       </div>
 
       {/* 4-column bordered container */}
-      <div className="bg-white dark:bg-[#111726] border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 dark:divide-slate-800 transition-colors">
+      <div className="bg-white dark:bg-[#131824] border border-gray-200/90 dark:border-[#232D42] rounded-2xl overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-200/90 dark:divide-[#232D42] shadow-soft transition-colors">
         {cards.map((item) => {
           const isCardHovered = hoveredCardId === item.id;
           const isCardActive = activeCardId === item.id;
@@ -75,7 +75,7 @@ export function ClusterTelemetryRow() {
                 setHoveredCardId(null);
                 setHoveredBar(null);
               }}
-              className="p-5 flex flex-col justify-between cursor-pointer relative bg-white dark:bg-[#111726] hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors duration-150 group select-none"
+              className="p-6 flex flex-col justify-between cursor-pointer relative bg-white dark:bg-[#131824] hover:bg-slate-50/60 dark:hover:bg-[#1A2234] transition-colors duration-200 group select-none"
             >
               <div>
                 {/* Title & Info Icon */}
