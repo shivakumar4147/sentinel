@@ -13,14 +13,13 @@ class MetricsCollector:
     def __init__(self, prometheus_url: Optional[str] = None):
         self.prometheus_url = prometheus_url or settings.PROMETHEUS_URL
 
-    async def collect_service_metrics(self, service_name: str) -> ServiceMetricsSnapshot:
+    def collect_service_metrics(self, service_name: str) -> ServiceMetricsSnapshot:
         """Attempts to query Prometheus; returns simulated snapshot if Prometheus is unreachable."""
         try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
+            with httpx.Client(timeout=3.0) as client:
                 query_url = f"{self.prometheus_url}/api/v1/query"
-                resp = await client.get(query_url, params={"query": f'up{{job="{service_name}"}}'})
+                resp = client.get(query_url, params={"query": f'up{{job="{service_name}"}}'})
                 if resp.status_code == 200:
-                    # Successfully reached Prometheus
                     logger.debug("Successfully queried Prometheus for %s", service_name)
         except Exception as e:
             logger.debug("Prometheus query skipped (%s), using local snapshot.", str(e))

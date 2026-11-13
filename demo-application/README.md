@@ -343,3 +343,12 @@ These credentials are for demonstration purposes only.
 The completed demo application provides a cloud-native environment where Sentinel can observe application behavior, collect logs and metrics, investigate controlled failures, and demonstrate recovery workflows.
 
 The application provides a realistic target environment for demonstrating Sentinel's incident investigation and remediation capabilities.
+## Subdirectories
+- `api/`: Sample Python/Node HTTP REST service instrumented with Prometheus metrics.
+- `worker/`: Background worker handling asynchronous tasks.
+- `database/`: Postgres / Redis schema and seed scripts.
+- `failure-scenarios/`:
+  - `bad-deployment/`: Simulates a broken rollout returning 500 status codes.
+  - `database-failure/`: Terminates the database or severs network connectivity.
+  - `resource-exhaustion/`: Allocates unbounded memory to simulate OOM conditions.
+

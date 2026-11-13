@@ -65,3 +65,4 @@ def assess_action_risk(
     # Map back to enum
     inv_rank = {1: RiskLevel.LOW, 2: RiskLevel.MEDIUM, 3: RiskLevel.HIGH}
     return inv_rank[current_rank]
+

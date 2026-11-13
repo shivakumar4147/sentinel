@@ -49,8 +49,25 @@ class Settings(BaseSettings):
         "isolate_traffic",
     ]
 
+    # Target Service Allowlist for Remediation
+    ALLOWED_REMEDIATION_TARGETS: List[str] = [
+        "demo-api",
+        "api",
+        "sentinel-demo-api",
+        "demo_application",
+    ]
+
+    # Remediation Execution Safety Parameters
+    REMEDIATION_TIMEOUT_SECONDS: int = int(os.getenv("REMEDIATION_TIMEOUT_SECONDS", "10"))
+    REMEDIATION_MAX_RETRIES: int = int(os.getenv("REMEDIATION_MAX_RETRIES", "3"))
+    REMEDIATION_COOLDOWN_SECONDS: int = int(os.getenv("REMEDIATION_COOLDOWN_SECONDS", "30"))
+
     # Monitoring (Prometheus)
     PROMETHEUS_URL: str = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
+
+    # Docker Connector Configuration (Read-Only)
+    MOCK_SERVICES_FALLBACK: bool = os.getenv("MOCK_SERVICES_FALLBACK", "False").lower() in ("true", "1")
+    DOCKER_TIMEOUT_SECONDS: int = int(os.getenv("DOCKER_TIMEOUT_SECONDS", "5"))
 
     # CORS
     CORS_ORIGINS: Union[List[str], str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
@@ -67,7 +84,16 @@ class Settings(BaseSettings):
     @field_validator("WHITELISTED_ACTIONS", mode="before")
     def assemble_whitelisted_actions(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):
-            return [i.strip() for i in v.split(",")]
+            return [i.strip() for i in v.split(",") if i.strip()]
+        return v
+
+    @field_validator("ALLOWED_REMEDIATION_TARGETS", mode="before")
+    def assemble_allowed_targets(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return [i.strip() for i in v.split(",") if i.strip()]
         return v
 
     if _has_pydantic_settings and SettingsConfigDict:

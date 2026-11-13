@@ -36,3 +36,4 @@ class AnomalyDetector:
 
 
 anomaly_detector = AnomalyDetector()
+

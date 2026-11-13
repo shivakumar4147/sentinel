@@ -1,8 +1,14 @@
 """Incidents management routes."""
 
+from typing import Optional
 from fastapi import APIRouter, HTTPException, status
 from app.incidents.manager import incident_manager
-from app.schemas import IncidentDetailResponse, IncidentListResponse
+from app.schemas import (
+    AnalyzeIncidentRequest,
+    AnalyzeIncidentResponse,
+    IncidentDetailResponse,
+    IncidentListResponse,
+)
 
 router = APIRouter(tags=["Incidents"])
 
@@ -24,3 +30,10 @@ async def get_incident(incident_id: str):
             detail=f"Incident '{incident_id}' not found.",
         )
     return incident
+
+
+@router.post("/incidents/analyze", response_model=AnalyzeIncidentResponse)
+def analyze_incident(request: Optional[AnalyzeIncidentRequest] = None):
+    """Triggers an incident evidence collection and three-state investigation."""
+    target_service = request.service_name if request else None
+    return incident_manager.analyze_system_state(service_name=target_service)

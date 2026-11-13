@@ -22,3 +22,4 @@ class RollbackCoordinator:
             "dry_run": dry_run,
             "message": f"Rollback hooks triggered for {target}.",
         }
+

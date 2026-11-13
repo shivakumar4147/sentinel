@@ -73,7 +73,7 @@ app.include_router(audit_router, prefix=api_prefix)
 
 
 @app.get("/", tags=["Root"])
-async def root():
+def root():
     """Root endpoint welcoming operators and providing link to Swagger documentation."""
     return {
         "service": settings.PROJECT_NAME,
@@ -99,3 +99,4 @@ async def global_exception_handler(request: Request, exc: Exception):
             },
         },
     )
+
