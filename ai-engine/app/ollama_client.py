@@ -1,5 +1,6 @@
 
 import requests
+from app.json_utils import clean_json_str
 from app.schemas import IncidentDiagnosis
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
@@ -45,4 +46,4 @@ def generate_response(prompt: str) -> IncidentDiagnosis:
     result = response.json()
     content = result["message"]["content"]
 
-    return IncidentDiagnosis.model_validate_json(content)
+    return IncidentDiagnosis.model_validate_json(clean_json_str(content))

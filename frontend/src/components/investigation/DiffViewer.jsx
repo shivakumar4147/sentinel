@@ -16,8 +16,11 @@ import { Badge } from '../common/Badge';
 export function DiffViewer({
   patch,
   onApply,
+  onReject,
   isApplying = false,
   isApplied = false,
+  isRejecting = false,
+  isRejected = false,
   showApplyButton = true,
 }) {
   const [copied, setCopied] = useState(false);
@@ -89,6 +92,18 @@ export function DiffViewer({
               </>
             )}
           </button>
+
+          {onReject && !isApplied && (
+            <Button
+              variant="danger"
+              size="xs"
+              loading={isRejecting}
+              disabled={isApplying || isRejected}
+              onClick={onReject}
+            >
+              {isRejected ? 'Rejected' : 'Reject Fix'}
+            </Button>
+          )}
 
           {showApplyButton && (
             isApplied ? (

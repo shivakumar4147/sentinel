@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from sqlalchemy import (
@@ -265,6 +266,14 @@ app = FastAPI(
     description="Sample e-commerce application monitored by Sentinel",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=False,
+    allow_methods=["POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept"],
 )
 
 

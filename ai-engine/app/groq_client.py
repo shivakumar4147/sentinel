@@ -2,6 +2,7 @@
 import os
 
 from groq import Groq
+from app.json_utils import clean_json_str
 from app.schemas import IncidentDiagnosis
 
 
@@ -60,4 +61,4 @@ def generate_response(prompt: str) -> IncidentDiagnosis:
     if not content:
         raise ValueError("Groq returned an empty response")
 
-    return IncidentDiagnosis.model_validate_json(content)
+    return IncidentDiagnosis.model_validate_json(clean_json_str(content))

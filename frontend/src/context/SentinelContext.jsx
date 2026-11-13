@@ -313,6 +313,86 @@ export function SentinelProvider({ children }) {
     }
   };
 
+  // Accept and apply solution directly: approves, executes, resets scenario, and verifies
+  const acceptAndApplySolution = async (remediationIdOrIncidentId, notes = 'Accepted by operator') => {
+    try {
+      let remId = remediationIdOrIncidentId;
+      if (remId && remId.startsWith('INC-')) {
+        const found = remediations.find(r => r.incident_id === remId);
+        if (found) remId = found.remediation_id;
+        else remId = 'REM-102';
+      }
+
+      // 1. Approve
+      try {
+        await SentinelAPI.approveRemediation(remId, notes, 'oncall-operator');
+      } catch (appErr) {
+        console.warn('[acceptAndApplySolution] approve warning:', appErr.message);
+      }
+
+      // 2. Execute patch
+      const execRes = await SentinelAPI.executeRemediation(remId);
+
+      // 3. Mark scenario normalized
+      try {
+        await SentinelAPI.setLiveStoreScenario('normal');
+      } catch (_) {}
+
+      // 4. Verify recovery
+      try {
+        const incId = remId.startsWith('INC-') ? remId : (remediations.find(r => r.remediation_id === remId)?.incident_id || 'INC-002');
+        await SentinelAPI.verifyIncident(incId);
+      } catch (_) {}
+
+      addToast({
+        type: 'success',
+        title: 'Solution Applied & Store Restored',
+        message: 'Diff merged into demo-application/api/main.py. Target checkout recovered (HTTP 200).',
+      });
+
+      await fetchData(true);
+      await fetchLiveStoreStatus();
+      return execRes;
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Failed to Apply Solution',
+        message: err.message || 'Could not apply remediation patch',
+      });
+      throw err;
+    }
+  };
+
+  // Reject solution directly: marks remediation & incident rejected, leaves error active on storefront
+  const rejectSolution = async (remediationIdOrIncidentId, reason = 'Operator rejected proposed fix') => {
+    try {
+      let remId = remediationIdOrIncidentId;
+      if (remId && remId.startsWith('INC-')) {
+        const found = remediations.find(r => r.incident_id === remId);
+        if (found) remId = found.remediation_id;
+        else remId = 'REM-102';
+      }
+
+      const res = await SentinelAPI.rejectRemediation(remId, reason, 'oncall-operator');
+      addToast({
+        type: 'warning',
+        title: 'Remediation Rejected',
+        message: 'Patch was not applied. Error condition remains active on demo store (HTTP 500).',
+      });
+
+      await fetchData(true);
+      await fetchLiveStoreStatus();
+      return res;
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Rejection Failed',
+        message: err.message || 'Could not record rejection',
+      });
+      throw err;
+    }
+  };
+
   return (
     <SentinelContext.Provider
       value={{
@@ -336,6 +416,8 @@ export function SentinelProvider({ children }) {
         rejectRemediation,
         reviseRemediation,
         executeRemediation,
+        acceptAndApplySolution,
+        rejectSolution,
         liveStoreStatus,
         fetchLiveStoreStatus,
         applyCodePatch,

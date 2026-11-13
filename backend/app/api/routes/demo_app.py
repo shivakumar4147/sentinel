@@ -74,6 +74,36 @@ def probe_live_ecommerce_api() -> Optional[Dict[str, Any]]:
 
             is_overall_healthy = db_healthy and liveness_ok and checkout_ok
 
+            if not checkout_ok and db_healthy:
+                _demo_store_state["active_scenario"] = "bad_deployment"
+                _demo_store_state["is_failing"] = True
+                _demo_store_state["failed_checkouts"] += 1
+                incident_manager.record_checkout_failure(
+                    error_message=checkout_detail or "Simulated bad deployment: checkout service failed",
+                    stack_trace=[
+                        f"POST {DEMO_API_URL}/checkout HTTP/1.1 {chk_resp.status_code}",
+                        f"Error: {checkout_detail}",
+                        "File 'demo-application/api/main.py', line 512, in checkout",
+                        "Transaction aborted for user sentinel-verifier@sentinel.internal",
+                    ],
+                    target_service="sentinel-ecommerce-api",
+                    target_file="demo-application/api/main.py",
+                )
+            elif not db_healthy:
+                _demo_store_state["active_scenario"] = "database_failure"
+                _demo_store_state["is_failing"] = True
+                incident_manager.record_checkout_failure(
+                    error_message="PostgreSQL connection pool exhausted or database unavailable",
+                    stack_trace=[
+                        f"GET {DEMO_API_URL}/ready HTTP/1.1 503 Service Unavailable",
+                        "Database connection failed",
+                    ],
+                    target_service="sentinel-ecommerce-db",
+                    target_file="demo-application/worker/main.py",
+                )
+            elif is_overall_healthy:
+                _demo_store_state["is_failing"] = False
+
             return {
                 "live_api_responding": True,
                 "healthy": is_overall_healthy,
@@ -173,6 +203,17 @@ def set_demo_app_scenario(req: ScenarioRequest) -> Dict[str, Any]:
 
     if sc == "bad_deployment":
         _demo_store_state["failed_checkouts"] += 1
+        _demo_store_state["is_failing"] = True
+        incident_manager.record_checkout_failure(
+            error_message="Simulated bad deployment: checkout service failed",
+            stack_trace=[
+                "POST /checkout HTTP/1.1 500 Internal Server Error",
+                "Error: Simulated bad deployment: checkout service failed",
+                "File 'demo-application/api/main.py', line 512, in checkout",
+            ],
+            target_service="sentinel-ecommerce-api",
+            target_file="demo-application/api/main.py",
+        )
         # If host docker CLI is available, activate scenario in Docker
         try:
             subprocess.run(
@@ -217,6 +258,7 @@ def set_demo_app_scenario(req: ScenarioRequest) -> Dict[str, Any]:
         )
     else:
         # Reset normal deployment
+        _demo_store_state["is_failing"] = False
         try:
             subprocess.run(
                 ["docker", "compose", "-f", "docker-compose.yml", "up", "-d", "--force-recreate", "api"],

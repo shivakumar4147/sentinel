@@ -146,8 +146,27 @@ from app.schemas import PatchProposal, PatchProposalReport
 def _fallback_patch_report(prompt: str) -> PatchProposalReport:
     """Deterministic fallback patch proposal when LLMs are offline."""
     patches = []
-    if "paymentMethod" in prompt or "checkout" in prompt:
-        target_file = "checkout.py"
+
+    # Extract collected source files from prompt
+    collected_files = []
+    for line in prompt.splitlines():
+        if line.startswith("FILE: "):
+            collected_files.append(line.replace("FILE: ", "").strip())
+
+    if any("demo-application" in f or "main.py" in f for f in collected_files) or "SIMULATE_BAD_DEPLOYMENT" in prompt or "bad deployment" in prompt.lower():
+        target_file = next((f for f in collected_files if "main.py" in f), "demo-application/api/main.py")
+        patches.append(
+            PatchProposal(
+                file_path=target_file,
+                original_code="    if SIMULATE_BAD_DEPLOYMENT:",
+                replacement_code="    if False and SIMULATE_BAD_DEPLOYMENT:  # Fixed by Sentinel Remediation",
+                explanation="Bypass simulated bad deployment failure switch to restore normal checkout operation.",
+                related_finding="Controlled Simulated Bad Deployment Failure Switch on /checkout",
+                confidence=0.98,
+            )
+        )
+    elif "paymentMethod" in prompt or "checkout" in prompt:
+        target_file = next((f for f in collected_files if "checkout" in f), "checkout.py")
         for word in prompt.split():
             if word.endswith("checkout.py"):
                 target_file = word.strip('"\'')
@@ -168,9 +187,10 @@ def _fallback_patch_report(prompt: str) -> PatchProposalReport:
             )
         )
     elif "worker" in prompt or "connection" in prompt:
+        target_file = next((f for f in collected_files if "worker" in f or "main.py" in f), "worker/main.py")
         patches.append(
             PatchProposal(
-                file_path="worker/main.py",
+                file_path=target_file,
                 original_code="    db = SessionLocal()\n    check_database_health(db)",
                 replacement_code="    db = SessionLocal()\n    try:\n        check_database_health(db)\n    finally:\n        db.close()",
                 explanation="Ensure database session is explicitly closed in a finally block to prevent connection pool exhaustion.",
@@ -179,9 +199,10 @@ def _fallback_patch_report(prompt: str) -> PatchProposalReport:
             )
         )
     else:
+        target_file = collected_files[0] if collected_files else "main.py"
         patches.append(
             PatchProposal(
-                file_path="main.py",
+                file_path=target_file,
                 original_code="    return execute_query()",
                 replacement_code="    try:\n        return execute_query()\n    except Exception as exc:\n        logger.error('Query failed: %s', exc)\n        raise HTTPException(status_code=503, detail='Service temporarily unavailable')",
                 explanation="Add exception handling boundary around database operations.",

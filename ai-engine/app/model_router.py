@@ -30,6 +30,20 @@ def _generate_gemini_response(prompt: str) -> IncidentDiagnosis:
 def _fallback_diagnosis(prompt: str) -> IncidentDiagnosis:
     """Deterministic fallback when external AI providers are offline/sandboxed."""
     lower_prompt = prompt.lower()
+    if "bad_deployment" in lower_prompt or "bad deployment" in lower_prompt or "simulate_bad_deployment" in lower_prompt or "demo-application" in lower_prompt:
+        return IncidentDiagnosis(
+            summary="Checkout HTTP 500 failure caused by simulated bad deployment",
+            root_cause="Simulated bad deployment active on ecommerce API: SIMULATE_BAD_DEPLOYMENT=true causing HTTP 500 on /checkout",
+            supporting_evidence=[
+                "POST /checkout HTTP/1.1 500 Internal Server Error",
+                "Simulated bad deployment: checkout service failed in demo-application/api/main.py",
+            ],
+            contradicting_evidence=[],
+            confidence=0.98,
+            action="rollback_deployment",
+            escalation=True,
+            missing_information=[],
+        )
     if "checkout" in lower_prompt or "paymentmethod" in lower_prompt or "attributeerror" in lower_prompt:
         return IncidentDiagnosis(
             summary="Checkout failure caused by unhandled AttributeError",
@@ -40,7 +54,7 @@ def _fallback_diagnosis(prompt: str) -> IncidentDiagnosis:
             ],
             contradicting_evidence=[],
             confidence=0.95,
-            action="rollback_deployment",
+            action="apply_code_patch",
             escalation=True,
             missing_information=[],
         )

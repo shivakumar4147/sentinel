@@ -88,7 +88,7 @@ def _generate_groq_test_report(prompt: str) -> ReportModel:
             content = response.choices[0].message.content
             if not content:
                 raise ValueError("Groq returned an empty test report")
-            return ReportModel.model_validate_json(content)
+            return ReportModel.model_validate_json(clean_json_str(content))
         except Exception as error:
             last_error = error
             logger.warning(
@@ -134,9 +134,10 @@ def _generate_ollama_test_report(prompt: str) -> ReportModel:
         "Ollama test response received for validation (%d characters)",
         len(content),
     )
-    return ReportModel.model_validate_json(content)
+    return ReportModel.model_validate_json(clean_json_str(content))
 
 
+from app.json_utils import clean_json_str
 from app.schemas import GeneratedTest
 
 

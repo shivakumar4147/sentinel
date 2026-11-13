@@ -341,6 +341,8 @@ const REVIEWS = [
 // Analyzes checkout API responses & errors to extract the exact simulation name
 // ---------------------------------------------------------------------------
 
+const CHECKOUT_API_URL = "/checkout";
+
 const parseSimulationError = (status, data, errorObj) => {
   const detail = (data && data.detail) || (errorObj && errorObj.message) || "";
   const detailStr = String(detail);
@@ -359,7 +361,7 @@ const parseSimulationError = (status, data, errorObj) => {
       title: "There was an Internal Server Error",
       scenario: "Bad Deployment Simulation (Rollout Failure)",
       desc: "The server encountered an unexpected internal error during the deployment rollout simulation.",
-      serverDetail: detailStr || "Simulated bad deployment: checkout service failed",
+      serverDetail: detailStr || `Checkout API returned HTTP ${status}.`,
       sentinelAlert: "Sentinel incident detected on /checkout. HTTP 5xx error rate spike logged.",
     };
   }
@@ -576,7 +578,7 @@ function App() {
       for (const item of cart) {
         let response;
         try {
-          response = await fetch("/api/checkout", {
+          response = await fetch(CHECKOUT_API_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

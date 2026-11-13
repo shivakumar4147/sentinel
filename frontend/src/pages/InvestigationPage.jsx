@@ -24,7 +24,7 @@ import {
 
 export function InvestigationPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { incidents, investigateIncident, applyCodePatch, runVerificationTest } = useSentinel();
+  const { incidents, investigateIncident, applyCodePatch, acceptAndApplySolution, rejectSolution, runVerificationTest } = useSentinel();
 
   const queryId = searchParams.get('id');
   const [selectedIncidentId, setSelectedIncidentId] = useState(
@@ -34,6 +34,8 @@ export function InvestigationPage() {
   const [activeTab, setActiveTab] = useState('code_fixes'); // 'code_fixes' | 'telemetry'
   const [isApplyingPatch, setIsApplyingPatch] = useState(false);
   const [patchApplied, setPatchApplied] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [isRejected, setIsRejected] = useState(false);
 
   useEffect(() => {
     if (queryId) {
@@ -66,10 +68,25 @@ export function InvestigationPage() {
     if (!activeIncident) return;
     setIsApplyingPatch(true);
     try {
-      await applyCodePatch(activeIncident.incident_id);
+      const remId = activeIncident.remediation_id || activeIncident.incident_id || 'REM-102';
+      await acceptAndApplySolution(remId);
       setPatchApplied(true);
+      setIsRejected(false);
     } finally {
       setIsApplyingPatch(false);
+    }
+  };
+
+  const handleRejectPatch = async () => {
+    if (!activeIncident) return;
+    setIsRejecting(true);
+    try {
+      const remId = activeIncident.remediation_id || activeIncident.incident_id || 'REM-102';
+      await rejectSolution(remId, 'Operator rejected proposed patch from investigation view');
+      setIsRejected(true);
+      setPatchApplied(false);
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -87,7 +104,17 @@ export function InvestigationPage() {
 
   // Extract structured code fixes data
   const defaultTargetFile = activeIncident.target_file || (activeIncident.incident_id === 'INC-8490' || activeIncident.incident_id === 'INC-002' ? 'demo-application/api/main.py' : 'worker/main.py');
-  const patchData = investigation?.patch_generation || (activeIncident.diff ? {
+  
+  const rawPatch = (investigation?.patch_generation?.patches && investigation.patch_generation.patches[0])
+    || (investigation?.patch_generation?.unified_diff ? investigation.patch_generation : null)
+    || null;
+
+  const patchData = rawPatch ? {
+    file_path: rawPatch.file_path || defaultTargetFile,
+    unified_diff: rawPatch.unified_diff || activeIncident.diff || '',
+    explanation: rawPatch.explanation || 'Safely bypasses intentional bad deployment failure flag, restoring healthy checkout execution.',
+    confidence: rawPatch.confidence || investigation?.confidence || 0.98,
+  } : (activeIncident.diff ? {
     file_path: defaultTargetFile,
     unified_diff: activeIncident.diff,
     confidence: investigation?.confidence || 0.98,
@@ -114,7 +141,7 @@ export function InvestigationPage() {
   ];
 
   const filesInspected = investigation?.code_inspection?.files_inspected || [patchData?.file_path || defaultTargetFile];
-  const generatedTests = investigation?.test_generation?.generated_tests || [
+  const generatedTests = investigation?.test_generation?.tests || investigation?.test_generation?.generated_tests || [
     {
       file_path: 'tests/test_checkout_regression.py',
       test_framework: 'pytest',
@@ -194,7 +221,7 @@ export function InvestigationPage() {
               </span>
             </div>
             <h2 className="text-base sm:text-lg font-bold text-[#1E1B4B] dark:text-white">
-              {activeIncident.title}
+              {activeIncident.title || activeIncident.summary || activeIncident.incident_id}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-4xl">
               {activeIncident.summary}
@@ -296,8 +323,11 @@ export function InvestigationPage() {
             <DiffViewer
               patch={patchData}
               onApply={handleApplyPatch}
+              onReject={handleRejectPatch}
               isApplying={isApplyingPatch}
               isApplied={patchApplied}
+              isRejecting={isRejecting}
+              isRejected={isRejected}
               showApplyButton={true}
             />
           </div>

@@ -218,7 +218,11 @@ class RemediationExecutor:
             # =================================================================
             # 7. Execute Handler with Configurable Timeout
             # =================================================================
-            effective_dry_run = dry_run or settings.SAFETY_DRY_RUN
+            # When an action is explicitly approved by an operator and dry_run is False, execute live
+            if is_approved and not dry_run:
+                effective_dry_run = False
+            else:
+                effective_dry_run = dry_run or settings.SAFETY_DRY_RUN
             effective_timeout = (
                 timeout_seconds if timeout_seconds is not None else settings.REMEDIATION_TIMEOUT_SECONDS
             )

@@ -31,7 +31,10 @@ export function LiveWebsitePage() {
     setLiveStoreScenario,
     simulateLiveCheckout,
     applyCodePatch,
+    acceptAndApplySolution,
+    rejectSolution,
     incidents,
+    remediations,
   } = useSentinel();
 
   const [isInjecting, setIsInjecting] = useState(false);
@@ -43,6 +46,7 @@ export function LiveWebsitePage() {
     price: 165.0,
   });
   const [isApplyingPatch, setIsApplyingPatch] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   const [patchAppliedSuccess, setPatchAppliedSuccess] = useState(false);
 
   useEffect(() => {
@@ -65,15 +69,44 @@ export function LiveWebsitePage() {
     last_order_id: 'ORD-7FA912',
   };
 
-  const isDegraded = storeState.active_scenario !== 'normal' || storeState.is_failing;
-
   // Find corresponding incident in Sentinel
   const relatedIncident =
-    storeState.active_scenario === 'bad_deployment'
-      ? incidents.find((i) => i.incident_id === 'INC-8490' || i.incident_id === 'INC-002') || incidents[0]
-      : storeState.active_scenario === 'database_failure'
-      ? incidents.find((i) => i.incident_id === 'INC-8492' || i.incident_id === 'INC-001') || incidents[0]
-      : incidents[0];
+    incidents.find(
+      (i) =>
+        i.status !== 'resolved' &&
+        (i.incident_id === 'INC-002' ||
+          i.service?.toLowerCase().includes('ecommerce') ||
+          i.service?.toLowerCase().includes('checkout') ||
+          i.summary?.toLowerCase().includes('checkout'))
+    ) ||
+    (storeState.active_scenario === 'database_failure'
+      ? incidents.find((i) => i.incident_id === 'INC-001')
+      : incidents.find((i) => i.incident_id === 'INC-002')) ||
+    incidents[0];
+
+  const relatedRemediation =
+    remediations.find(
+      (r) =>
+        r.incident_id === relatedIncident?.incident_id ||
+        r.remediation_id === relatedIncident?.remediation_id
+    ) ||
+    remediations.find(
+      (r) => r.status === 'awaiting_approval' || r.status === 'pending_approval'
+    );
+
+  const isDegraded =
+    storeState.active_scenario !== 'normal' ||
+    storeState.is_failing ||
+    (relatedIncident && relatedIncident.status === 'awaiting_approval') ||
+    (relatedRemediation && (relatedRemediation.status === 'awaiting_approval' || relatedRemediation.status === 'pending_approval'));
+
+  const currentDiff =
+    relatedIncident?.investigation?.patch_generation?.patches?.[0]?.unified_diff ||
+    (typeof relatedIncident?.investigation?.patch_generation?.unified_diff === 'string'
+      ? relatedIncident.investigation.patch_generation.unified_diff
+      : null) ||
+    relatedRemediation?.diff ||
+    `--- a/demo-application/api/main.py\n+++ b/demo-application/api/main.py\n@@ -511,7 +511,7 @@\n     # CONTROLLED BAD-DEPLOYMENT FAILURE\n-    if SIMULATE_BAD_DEPLOYMENT:\n+    if False and SIMULATE_BAD_DEPLOYMENT:  # Fixed by Sentinel Remediation\n         log_event(\n`;
 
   const handleScenarioChange = async (scenario) => {
     setIsInjecting(true);
@@ -118,16 +151,25 @@ export function LiveWebsitePage() {
   };
 
   const handleApplyFixDirectly = async () => {
-    if (!relatedIncident) return;
     setIsApplyingPatch(true);
     try {
-      await applyCodePatch(relatedIncident.incident_id);
+      const remId = relatedIncident?.remediation_id || relatedIncident?.incident_id || 'REM-102';
+      await acceptAndApplySolution(remId);
       setPatchAppliedSuccess(true);
-      // Reset scenario to normal as the fix has landed
-      await setLiveStoreScenario('normal');
       setCheckoutResult(null);
     } finally {
       setIsApplyingPatch(false);
+    }
+  };
+
+  const handleRejectFix = async () => {
+    setIsRejecting(true);
+    try {
+      const remId = relatedIncident?.remediation_id || relatedIncident?.incident_id || 'REM-102';
+      await rejectSolution(remId, 'Operator rejected code patch from storefront control');
+      setPatchAppliedSuccess(false);
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -228,43 +270,97 @@ export function LiveWebsitePage() {
 
       {/* Active Incident & Hotfix CTA Banner (Shown when degraded or checkout 500) */}
       {isDegraded && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-rose-50 via-amber-50 to-indigo-50 dark:from-rose-950/40 dark:via-amber-950/30 dark:to-indigo-950/40 border border-rose-300 dark:border-rose-900/60 shadow-md animate-slide-up">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="p-5 rounded-2xl bg-[#0F1420] border-2 border-red-500/60 shadow-[0_0_35px_rgba(239,68,68,0.22)] text-white space-y-4 animate-slide-up">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-800">
             <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-rose-500 text-white shadow-sm flex-shrink-0 mt-0.5">
+              <div className="p-2.5 rounded-xl bg-red-500 text-white shadow-sm flex-shrink-0 mt-0.5">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-gray-900 dark:text-white text-sm">
+                  <span className="font-bold text-white text-sm">
                     Live Incident Detected on Target Storefront
                   </span>
                   <Badge variant="critical" size="xs">
-                    {relatedIncident?.incident_id || 'INC-8490'}
+                    {relatedIncident?.incident_id || 'INC-002'}
                   </Badge>
+                  <span className="text-xs text-slate-400 font-mono">
+                    demo-application/api/main.py
+                  </span>
                 </div>
-                <p className="text-xs text-slate-700 dark:text-slate-300 max-w-3xl leading-relaxed">
-                  Checkout service is throwing <code className="font-mono text-rose-600 dark:text-rose-400 font-bold bg-white/80 dark:bg-black/40 px-1 rounded">500 Internal Server Error</code>. Sentinel's 5-stage pipeline has identified the bug in <code className="font-mono font-bold text-indigo-600 dark:text-indigo-400">demo-application/api/main.py</code> and generated a unified diff hotfix with regression tests!
+                <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
+                  Checkout service is throwing <code className="font-mono text-rose-400 font-bold bg-black/50 px-1 rounded">500 Internal Server Error</code>. Sentinel's autonomous pipeline has generated a verified code patch!
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2.5 flex-shrink-0">
-              <Link to={`/investigation?id=${relatedIncident?.incident_id || 'INC-8490'}`}>
-                <Button variant="primary" size="sm" icon={FileCode}>
-                  Inspect AI Code Fix & Diff →
+              <Link to={`/investigation?id=${relatedIncident?.incident_id || 'INC-002'}`}>
+                <Button variant="secondary" size="sm" icon={FileCode}>
+                  Full 5-Stage View
                 </Button>
               </Link>
+            </div>
+          </div>
 
+          {/* Unified Diff Box Displayed Directly */}
+          <div className="p-3.5 rounded-xl bg-[#090D16] border border-blue-500/30 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-blue-400" />
+                <span className="font-bold text-white">AI Autonomous Solution Patch</span>
+              </div>
+              <span className="font-mono text-[11px] text-slate-400">demo-application/api/main.py</span>
+            </div>
+            <div className="font-mono text-xs rounded-lg bg-[#05080F] border border-slate-800/80 p-2.5 overflow-x-auto leading-relaxed max-h-36">
+              {currentDiff.split('\n').map((line, idx) => {
+                const isAdd = line.startsWith('+') && !line.startsWith('+++');
+                const isDel = line.startsWith('-') && !line.startsWith('---');
+                const isHunk = line.startsWith('@@');
+                return (
+                  <div
+                    key={idx}
+                    className={`px-1 rounded ${
+                      isAdd
+                        ? 'text-emerald-400 bg-emerald-950/30 font-semibold'
+                        : isDel
+                        ? 'text-rose-400 bg-rose-950/30 font-semibold'
+                        : isHunk
+                        ? 'text-blue-400/80 font-bold'
+                        : 'text-slate-400'
+                    }`}
+                  >
+                    {line}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Action Decision Buttons */}
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <span className="text-xs text-slate-400">
+              If approved, patch applies immediately and restores checkout to HTTP 200. If rejected, error remains active.
+            </span>
+            <div className="flex items-center gap-3">
               <Button
-                variant="secondary"
+                variant="danger"
                 size="sm"
-                icon={Sparkles}
+                loading={isRejecting}
+                disabled={isApplyingPatch}
+                onClick={handleRejectFix}
+              >
+                Reject Fix
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={CheckCircle2}
                 loading={isApplyingPatch}
-                disabled={patchAppliedSuccess}
+                disabled={isRejecting || patchAppliedSuccess}
                 onClick={handleApplyFixDirectly}
               >
-                {patchAppliedSuccess ? '✓ Patch Applied' : 'Hotfix Live Store'}
+                {patchAppliedSuccess ? '✓ Applied & Verified' : 'Accept & Apply Fix'}
               </Button>
             </div>
           </div>

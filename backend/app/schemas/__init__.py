@@ -201,6 +201,7 @@ class IncidentSummary(BaseModel):
     status: str
     severity: str
     summary: str
+    title: Optional[str] = None
     created_at: datetime
 
 
@@ -215,6 +216,7 @@ class IncidentDetailResponse(BaseModel):
     status: str
     severity: str
     summary: str
+    title: Optional[str] = None
     evidence: AIIncidentInput
     investigation: Optional[Union[AIInvestigationResponse, Dict[str, Any]]] = None
     remediation_id: Optional[str] = None

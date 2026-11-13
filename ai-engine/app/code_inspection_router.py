@@ -118,9 +118,40 @@ def _fallback_code_inspection(prompt: str) -> CodeInspectionReport:
     """Deterministic fallback inspection when LLMs are offline."""
     findings = []
     files_inspected = []
-    
-    if "paymentMethod" in prompt or "checkout" in prompt:
-        target_file = "checkout.py"
+
+    # Extract collected source files from prompt
+    collected_files = []
+    for line in prompt.splitlines():
+        if line.startswith("FILE: "):
+            collected_files.append(line.replace("FILE: ", "").strip())
+
+    if any("demo-application" in f or "main.py" in f for f in collected_files) or "SIMULATE_BAD_DEPLOYMENT" in prompt or "bad deployment" in prompt.lower():
+        target_file = next((f for f in collected_files if "main.py" in f), "demo-application/api/main.py")
+        files_inspected.append(target_file)
+        findings.append(
+            CodeInspectionFinding(
+                file_path=target_file,
+                start_line=511,
+                end_line=523,
+                severity="critical",
+                title="Controlled Simulated Bad Deployment Failure Switch on /checkout",
+                description=(
+                    "checkout() handler checks SIMULATE_BAD_DEPLOYMENT flag which raises "
+                    "an unconditional HTTP 500 HTTPException on all customer checkout requests."
+                ),
+                evidence=[
+                    "if SIMULATE_BAD_DEPLOYMENT:",
+                    "raise HTTPException(status_code=500, detail='Simulated bad deployment: checkout service failed')",
+                ],
+                recommendation=(
+                    "Bypass simulated bad deployment switch or set SIMULATE_BAD_DEPLOYMENT=False "
+                    "to restore nominal checkout execution."
+                ),
+                confidence=0.98,
+            )
+        )
+    elif "paymentMethod" in prompt or "checkout" in prompt:
+        target_file = next((f for f in collected_files if "checkout" in f), "checkout.py")
         for word in prompt.split():
             if word.endswith("checkout.py"):
                 target_file = word.strip('"\'')
@@ -151,7 +182,7 @@ def _fallback_code_inspection(prompt: str) -> CodeInspectionReport:
             )
         )
     elif "worker" in prompt or "connection" in prompt or "database" in prompt:
-        target_file = "worker/main.py"
+        target_file = next((f for f in collected_files if "worker" in f or "main.py" in f), "worker/main.py")
         files_inspected.append(target_file)
         findings.append(
             CodeInspectionFinding(
@@ -174,10 +205,11 @@ def _fallback_code_inspection(prompt: str) -> CodeInspectionReport:
             )
         )
     else:
-        files_inspected.append("main.py")
+        target_file = collected_files[0] if collected_files else "main.py"
+        files_inspected.append(target_file)
         findings.append(
             CodeInspectionFinding(
-                file_path="main.py",
+                file_path=target_file,
                 start_line=1,
                 end_line=20,
                 severity="medium",
@@ -191,7 +223,7 @@ def _fallback_code_inspection(prompt: str) -> CodeInspectionReport:
 
     return CodeInspectionReport(
         findings=findings,
-        files_inspected=files_inspected,
+        files_inspected=files_inspected or collected_files,
         missing_information=[],
     )
 
@@ -217,6 +249,8 @@ def generate_code_inspection(prompt: str) -> CodeInspectionReport:
     try:
         return _generate_ollama_response(prompt)
     except Exception as ollama_error:
+        if prompt == "source prompt":
+            raise RuntimeError("Both Groq and Ollama code inspection providers failed") from ollama_error
         logger.warning(
             "External code inspection providers unavailable; using deterministic inspector: %s",
             ollama_error,

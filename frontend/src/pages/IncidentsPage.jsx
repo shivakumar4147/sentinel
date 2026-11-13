@@ -4,11 +4,11 @@ import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
-import { Search } from 'lucide-react';
+import { Search, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function IncidentsPage() {
-  const { incidents } = useSentinel();
+  const { incidents, acceptAndApplySolution, rejectSolution } = useSentinel();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
@@ -17,10 +17,10 @@ export function IncidentsPage() {
 
   const filteredIncidents = incidents.filter((incident) => {
     const matchesSearch =
-      incident.incident_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.summary.toLowerCase().includes(searchTerm.toLowerCase());
+      (incident.incident_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (incident.title || incident.summary || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (incident.service || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (incident.summary || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesSeverity =
       severityFilter === 'ALL' || incident.severity.toLowerCase() === severityFilter.toLowerCase();
@@ -118,7 +118,7 @@ export function IncidentsPage() {
                       {incident.status.replace(/_/g, ' ')}
                     </Badge>
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                      {incident.title}
+                      {incident.title || incident.summary || incident.incident_id}
                     </h3>
                   </div>
 
@@ -175,22 +175,72 @@ export function IncidentsPage() {
           isOpen={!!selectedIncident}
           onClose={() => setSelectedIncident(null)}
           title={selectedIncident.incident_id}
-          description={selectedIncident.title}
+          description={selectedIncident.title || selectedIncident.summary || selectedIncident.incident_id}
           size="lg"
           footer={
-            <div className="flex items-center justify-between w-full">
-              <Link to={`/investigation?id=${selectedIncident.incident_id}`}>
-                <Button variant="primary" size="xs">
-                  Full Investigation
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between w-full gap-2">
+              <div className="flex items-center gap-2">
+                {selectedIncident.status === 'awaiting_approval' && (
+                  <>
+                    <Button
+                      variant="danger"
+                      size="xs"
+                      onClick={async () => {
+                        await rejectSolution(selectedIncident.remediation_id || selectedIncident.incident_id);
+                        setSelectedIncident(null);
+                      }}
+                    >
+                      Reject Fix
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="xs"
+                      icon={CheckCircle2}
+                      onClick={async () => {
+                        await acceptAndApplySolution(selectedIncident.remediation_id || selectedIncident.incident_id);
+                        setSelectedIncident(null);
+                      }}
+                    >
+                      Accept & Apply Fix
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <Link to={`/investigation?id=${selectedIncident.incident_id}`}>
+                  <Button variant="secondary" size="xs">
+                    Full Investigation →
+                  </Button>
+                </Link>
+                <Button variant="secondary" size="xs" onClick={() => setSelectedIncident(null)}>
+                  Close
                 </Button>
-              </Link>
-              <Button variant="secondary" size="xs" onClick={() => setSelectedIncident(null)}>
-                Close
-              </Button>
+              </div>
             </div>
           }
         >
           <div className="space-y-3.5 text-xs">
+            {/* Direct Solution Box for Awaiting Approval */}
+            {selectedIncident.status === 'awaiting_approval' && (
+              <div className="p-3 rounded-xl bg-[#090D16] border border-blue-500/30 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                    AI Autonomous Remediation Solution
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    {selectedIncident.target_file || 'demo-application/api/main.py'}
+                  </span>
+                </div>
+                <div className="font-mono text-xs rounded-lg bg-[#05080F] border border-slate-800/80 p-2 overflow-x-auto leading-relaxed max-h-28 text-slate-300">
+                  <div className="text-blue-400 font-bold">@@ -511,7 +511,7 @@ checkout</div>
+                  <div className="text-slate-400">     # CONTROLLED BAD-DEPLOYMENT FAILURE</div>
+                  <div className="text-rose-400 bg-rose-950/30">-    if SIMULATE_BAD_DEPLOYMENT:</div>
+                  <div className="text-emerald-400 bg-emerald-950/30">+    if False and SIMULATE_BAD_DEPLOYMENT:  # Fixed by Sentinel Remediation</div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-[#0D1424] border border-gray-200 dark:border-slate-800">
                 <div className="text-[11px] text-slate-400 dark:text-slate-400">Severity</div>
