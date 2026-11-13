@@ -1,0 +1,91 @@
+services:
+
+  database:
+    image: postgres:16
+    container_name: sentinel-ecommerce-db
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: ecommerce_user
+      POSTGRES_PASSWORD: demo_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ecommerce_user -d ecommerce" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: sentinel-ecommerce-api
+    environment:
+      DATABASE_URL: postgresql+pg8000://ecommerce_user:demo_password@database:5432/ecommerce
+      DEMO_USER_EMAIL: admin@example.com
+      DEMO_USER_PASSWORD: sentinel123
+    ports:
+      - "8000:5000"
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: sentinel-ecommerce-worker
+    environment:
+      DATABASE_URL: postgresql+pg8000://ecommerce_user:demo_password@database:5432/ecommerce
+      WORKER_INTERVAL: 10
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sentinel-ecommerce-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: sentinel-ecommerce-cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sentinel-ecommerce-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  prometheus_data:

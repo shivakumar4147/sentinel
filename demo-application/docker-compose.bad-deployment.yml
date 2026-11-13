@@ -1,0 +1,4 @@
+services:
+  api:
+    environment:
+      SIMULATE_BAD_DEPLOYMENT: "true"
