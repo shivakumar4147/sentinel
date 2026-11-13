@@ -14,7 +14,7 @@ export function Button({
   ...props
 }) {
   const baseClasses =
-    'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#A78BFA]/40 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.97] cursor-pointer';
+    'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#2563EB]/40 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98] cursor-pointer';
 
   const sizeClasses = {
     xs: 'text-xs px-2.5 py-1 gap-1.5',
@@ -24,12 +24,12 @@ export function Button({
   };
 
   const variantClasses = {
-    primary: 'bg-[#1D1D1F] hover:bg-black dark:bg-[#C4B5FD] dark:hover:bg-[#D8B4FE] text-white dark:text-[#0A0B10] shadow-sm dark:shadow-[0_0_20px_rgba(196,181,253,0.3)]',
-    secondary: 'bg-slate-100 hover:bg-slate-200 dark:bg-[#141522] dark:hover:bg-[#1C1D2E] text-slate-800 dark:text-slate-200 border border-[#E5E5EA] dark:border-white/[0.08] shadow-2xs',
+    primary: 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm shadow-blue-500/20 border border-blue-600/30',
+    secondary: 'bg-white dark:bg-[#131824] hover:bg-slate-50 dark:hover:bg-[#1A2234] text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-[#232D42] shadow-2xs',
     danger: 'bg-[#E11D48] hover:bg-[#BE123C] text-white shadow-sm shadow-rose-500/20 border border-rose-600/30',
     warning: 'bg-[#D97706] hover:bg-[#B45309] text-white shadow-sm border border-amber-600/30',
-    ghost: 'bg-transparent hover:bg-slate-100 dark:hover:bg-[#141522] text-[#8B5CF6] dark:text-[#C4B5FD]',
-    outline: 'bg-transparent border border-[#E5E5EA] dark:border-white/[0.1] hover:border-[#8B5CF6] dark:hover:border-[#C4B5FD] text-slate-800 dark:text-slate-200',
+    ghost: 'bg-transparent hover:bg-slate-100 dark:hover:bg-[#1A2234] text-[#2563EB] dark:text-[#60A5FA]',
+    outline: 'bg-white dark:bg-[#131824] border border-gray-200 dark:border-[#232D42] hover:border-[#2563EB] dark:hover:border-[#60A5FA] text-[#2563EB] dark:text-[#60A5FA]',
   };
 
   return (

@@ -1,57 +1,64 @@
 import React from 'react';
 import { useSentinel } from '../context/SentinelContext';
-import { TasksOverviewChart } from '../components/dashboard/TasksOverviewChart';
-import { RecentIncidentsCard } from '../components/dashboard/RecentIncidentsCard';
-import { AppleKpiCard } from '../components/dashboard/AppleKpiCard';
-import { SystemEfficiencyCard } from '../components/dashboard/SystemEfficiencyCard';
-import { Filter, Bell, FileSearch, CheckSquare, Sparkles } from 'lucide-react';
+import { UnifiedKpiStrip } from '../components/dashboard/UnifiedKpiStrip';
+import { ClusterTelemetryRow } from '../components/dashboard/ClusterTelemetryRow';
+import { IncidentChart } from '../components/dashboard/IncidentChart';
+import { ResourceUsageChart } from '../components/dashboard/ResourceUsageChart';
+import { ActivityFeed } from '../components/dashboard/ActivityFeed';
+import { Button } from '../components/common/Button';
+import { Badge } from '../components/common/Badge';
+import { AlertCircle, FileSearch, CheckSquare, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function OverviewPage() {
-  const { incidents, remediations } = useSentinel();
+  const { incidents, remediations, auditLogs } = useSentinel();
 
-  const criticalIncidents = incidents.filter(
-    (i) => i.severity === 'critical' && i.status !== 'resolved'
-  ).length;
-
+  const criticalIncidents = incidents.filter((i) => i.severity === 'critical' && i.status !== 'resolved').length;
   const pendingApprovals = remediations.filter(
     (r) => r.status === 'awaiting_approval' || r.status === 'pending_approval' || r.status === 'changes_suggested'
   ).length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Top Critical Alert Bar (Apple solid matte styling, if critical incidents exist) */}
+    <div className="space-y-8 animate-fade-in">
+      {/* Action Required: Critical Warning Card matching reference image design */}
       {criticalIncidents > 0 && (
-        <div className="p-4 sm:p-5 rounded-[20px] bg-[#161318] dark:bg-[#150F14] border border-red-500/30 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all shadow-[0_4px_24px_rgba(239,68,68,0.15)]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center flex-shrink-0">
-              <Bell className="w-4 h-4 text-[#FF5B48]" />
+        <div className="p-5 sm:p-6 rounded-2xl bg-[#161D2B] border border-red-500/40 ring-1 ring-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.28)] flex flex-col md:flex-row md:items-center justify-between gap-5 text-white transition-all">
+          <div className="space-y-2 min-w-0 flex-1">
+            {/* Header: Bell icon + Title matching reference */}
+            <div className="flex items-center gap-2.5">
+              <Bell className="w-5 h-5 text-[#FF5B48] fill-[#FF5B48] flex-shrink-0" />
+              <h3 className="font-bold text-base sm:text-lg text-white tracking-tight">
+                Action Required: INC-8492
+              </h3>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm tracking-tight text-white">
-                  Action Required: INC-8492
-                </span>
-                <span className="bg-red-950/70 border border-red-700/50 text-[#FF6363] text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">
-                  Critical
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Postgres connection pool at 99.4%. Remediation plan awaiting on-call operator sign-off.
-              </p>
+
+            {/* Description */}
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl pl-7.5">
+              Postgres pool at 99.4%. Remediation plan awaiting on-call sign-off.
+            </p>
+
+            {/* Tag pill + Metric matching the reference image */}
+            <div className="flex items-center gap-3 pt-1 pl-7.5">
+              <span className="bg-[#381B22] border border-[#5C232B] text-[#FF6363] text-[11px] font-bold uppercase px-3 py-0.5 rounded-full tracking-wider">
+                CRITICAL
+              </span>
+              <span className="text-[#FF6363] font-bold font-mono text-sm sm:text-base tracking-tight">
+                +99.4%
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-shrink-0 self-start sm:self-center">
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 flex-shrink-0 self-start md:self-center pl-7.5 md:pl-0">
             <Link to="/investigation?id=INC-8492">
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#221C24] hover:bg-[#2F2633] text-white border border-white/10 transition-all cursor-pointer">
-                <FileSearch className="w-3.5 h-3.5 text-slate-300" />
+              <button className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-[#222938] hover:bg-[#2C3547] text-white border border-slate-700/70 transition-all shadow-xs active:scale-[0.98] cursor-pointer">
+                <FileSearch className="w-3.5 h-3.5 flex-shrink-0 text-slate-300" />
                 AI Diagnosis
               </button>
             </Link>
             <Link to="/approvals">
-              <button className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#E11D48] hover:bg-[#BE123C] text-white transition-all shadow-xs cursor-pointer">
-                <CheckSquare className="w-3.5 h-3.5" />
+              <button className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#E11D48] hover:bg-[#BE123C] text-white shadow-md shadow-rose-950/40 transition-all active:scale-[0.98] cursor-pointer">
+                <CheckSquare className="w-3.5 h-3.5 flex-shrink-0" />
                 Review Approval ({pendingApprovals})
               </button>
             </Link>
@@ -59,55 +66,20 @@ export function OverviewPage() {
         </div>
       )}
 
-      {/* Dashboard Title & Filter Header Row (Matching Reference Image) */}
-      <div className="flex items-center justify-between select-none">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-          Dashboard
-        </h1>
+      {/* 1. Single Unified Top KPI Strip */}
+      <UnifiedKpiStrip />
 
-        <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#E5E5EA] dark:border-white/[0.08] bg-white dark:bg-[#141522] text-xs font-semibold text-slate-700 dark:text-[#D1D5DB] shadow-2xs hover:bg-slate-50 dark:hover:bg-[#1A1B2C] transition-all cursor-pointer">
-          <span>Filter</span>
-          <Filter className="w-3 h-3 text-slate-400 dark:text-[#A78BFA]" />
-        </button>
+      {/* 2. Cluster Health & Anomaly Rates */}
+      <ClusterTelemetryRow />
+
+      {/* 3. 2-Column Analytics Chart Row */}
+      <div className="bg-white dark:bg-[#131824] border border-gray-200/90 dark:border-[#232D42] rounded-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200/90 dark:divide-[#232D42] shadow-soft transition-colors">
+        <IncidentChart />
+        <ResourceUsageChart />
       </div>
 
-      {/* Asymmetric 2-Column Dashboard Grid Matching Reference Screenshot */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (Wide, ~66% - 8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Row 1: Tasks Overview Spline Telemetry Chart */}
-          <TasksOverviewChart />
-
-          {/* Row 2: Recent Incidents Table + 2 Stacked Apple KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-            {/* Recent Incidents Table Card (~58% width - 7 cols) */}
-            <div className="md:col-span-7 flex flex-col">
-              <RecentIncidentsCard />
-            </div>
-
-            {/* Two Stacked Apple KPI Cards (~42% width - 5 cols) */}
-            <div className="md:col-span-5 flex flex-col justify-between gap-6">
-              <AppleKpiCard
-                title="Total Balance"
-                value="$ 80.440"
-                trend="+8% To the last month"
-                glow={true}
-              />
-              <AppleKpiCard
-                title="Total Balance"
-                value="$ 84.220"
-                trend="+8% To the last month"
-                glow={true}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column (Narrow, ~34% - 4 cols): Transactions / System Efficiency with Arc Gauge */}
-        <div className="lg:col-span-4 h-full">
-          <SystemEfficiencyCard />
-        </div>
-      </div>
+      {/* 4. Recent Incidents & Audit Activity Stream Panels */}
+      <ActivityFeed incidents={incidents} auditLogs={auditLogs} />
     </div>
   );
 }

@@ -178,12 +178,12 @@ export function ApprovalsPage() {
 
   return (
     <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
-      {/* Top Banner - Spacious & De-cluttered (Apple Solid Matte Styling) */}
+      {/* Top Banner - Apple Solid Matte Styling */}
       <div className="p-6 rounded-[22px] bg-white dark:bg-[#0F1018] border border-[#E5E5EA] dark:border-white/[0.07] shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Operator Approvals Queue</h2>
-            <span className="text-[11px] font-mono font-bold text-[#7C3AED] dark:text-[#C4B5FD] bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/50 px-2.5 py-0.5 rounded-full">
+            <span className="text-[11px] font-mono font-bold text-[#7C3AED] dark:text-[#C4B5FD] bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 px-2.5 py-0.5 rounded-full">
               Human-in-the-Loop Guardrail
             </span>
           </div>
@@ -204,7 +204,7 @@ export function ApprovalsPage() {
       <div className="space-y-4">
         <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[#2563EB] dark:text-[#60A5FA]" />
+            <Clock className="w-4 h-4 text-[#7C3AED] dark:text-[#C4B5FD]" />
             <span>Active Review Queue ({pendingApprovals.length})</span>
           </div>
           <span className="text-[11px] text-slate-400 dark:text-slate-500 normal-case font-normal">
@@ -224,19 +224,19 @@ export function ApprovalsPage() {
                 key={rem.remediation_id}
                 className={`p-6 sm:p-7 border transition-all duration-300 ${
                   isAnalyzing
-                    ? 'border-[#7C3AED]/50 dark:border-[#A78BFA]/40 ring-1 ring-purple-500/20 shadow-apple-card bg-white dark:bg-[#0F1018]'
+                    ? 'border-purple-500/50 dark:border-purple-400/50 ring-1 ring-purple-500/20 shadow-md bg-white dark:bg-[#0F1018]'
                     : isRevised
-                    ? 'border-purple-300 dark:border-purple-500/30 bg-white dark:bg-[#0F1018] shadow-md'
+                    ? 'border-purple-400/40 dark:border-purple-400/30 bg-white dark:bg-[#0F1018] shadow-md'
                     : 'border-[#E5E5EA] dark:border-white/[0.07] bg-white dark:bg-[#0F1018]'
                 }`}
                 hover={!isAnalyzing}
               >
                 {/* AI Revising Banner (Live in-card loop feedback) */}
                 {isAnalyzing && (
-                  <div className="mb-5 p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/60 animate-ai-pulse">
+                  <div className="mb-5 p-4 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/50 animate-ai-pulse">
                     <div className="flex items-center justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#2563EB] dark:text-[#60A5FA]">
-                        <Bot className="w-4 h-4 animate-spin text-[#2563EB] dark:text-[#60A5FA]" />
+                      <div className="flex items-center gap-2 text-xs font-bold text-[#7C3AED] dark:text-[#C4B5FD]">
+                        <Bot className="w-4 h-4 animate-spin text-[#7C3AED] dark:text-[#C4B5FD]" />
                         <span>Sentinel AI Synthesizing Revised Remediation Plan...</span>
                       </div>
                       <Badge variant="changes_suggested" size="xs">
@@ -246,21 +246,21 @@ export function ApprovalsPage() {
                     <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
                       Addressing operator feedback: <em className="font-semibold text-slate-900 dark:text-white">"{activeSuggestion}"</em>
                     </p>
-                    <div className="w-full bg-blue-200/40 dark:bg-blue-950/60 rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full animate-ai-shimmer rounded-full" />
+                    <div className="w-full bg-purple-200/40 dark:bg-purple-950/60 rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#C4B5FD] rounded-full animate-ai-shimmer" />
                     </div>
                   </div>
                 )}
 
                 {/* AI Revised Plan Callout (When backend AI has generated a new proposal) */}
                 {!isAnalyzing && isRevised && (
-                  <div className="mb-5 p-4 rounded-xl bg-blue-50/50 dark:bg-[#162032] border border-blue-200/70 dark:border-blue-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up">
+                  <div className="mb-5 p-4 rounded-xl bg-purple-50/50 dark:bg-[#1A1829] border border-purple-200/70 dark:border-purple-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-up">
                     <div className="flex items-start gap-2.5">
-                      <Sparkles className="w-4 h-4 text-[#2563EB] dark:text-[#60A5FA] flex-shrink-0 mt-0.5" />
+                      <Sparkles className="w-4 h-4 text-[#7C3AED] dark:text-[#C4B5FD] flex-shrink-0 mt-0.5" />
                       <div>
                         <div className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-2">
                           <span>AI Revised Proposal Ready for Review</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/80 text-[#2563EB] dark:text-[#60A5FA] font-mono font-bold">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-[#7C3AED] dark:text-[#C4B5FD] font-mono font-bold">
                             Iteration v{rem.revision || 2}
                           </span>
                         </div>
@@ -283,12 +283,12 @@ export function ApprovalsPage() {
                   <div className="space-y-4 flex-1 min-w-0 w-full">
                     {/* Top Metadata Badges */}
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="font-mono text-xs font-bold text-gray-900 dark:text-white bg-slate-100 dark:bg-[#1B1C2E] px-2.5 py-0.5 rounded-md border border-gray-200 dark:border-white/[0.08]">
+                      <span className="font-mono text-xs font-bold text-gray-900 dark:text-white bg-slate-100 dark:bg-[#141522] px-2.5 py-0.5 rounded-md border border-gray-200 dark:border-white/[0.08]">
                         {rem.remediation_id}
                       </span>
                       <Link
                         to={`/investigation?id=${rem.incident_id}`}
-                        className="font-mono text-xs font-semibold text-[#7C3AED] dark:text-[#C4B5FD] hover:underline"
+                        className="font-mono text-xs font-semibold text-[#8B5CF6] dark:text-[#C4B5FD] hover:underline"
                       >
                         Ref: {rem.incident_id}
                       </Link>
@@ -309,13 +309,13 @@ export function ApprovalsPage() {
                     </h3>
 
                     {/* Reason & Rationale */}
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-gray-100 dark:border-white/[0.06] text-xs">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-[#E5E5EA] dark:border-white/[0.07] text-xs">
                       <span className="font-bold text-gray-900 dark:text-white">Analysis & Rationale: </span>
                       <span className="text-slate-600 dark:text-slate-300 leading-relaxed">{rem.reason}</span>
                     </div>
 
                     {/* Expected Impact */}
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-gray-100 dark:border-white/[0.06] text-xs">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-[#E5E5EA] dark:border-white/[0.07] text-xs">
                       <span className="font-bold text-[#059669] dark:text-emerald-400">Expected Outcome: </span>
                       <span className="text-slate-600 dark:text-slate-300 leading-relaxed">{rem.expected_impact}</span>
                     </div>
@@ -329,7 +329,7 @@ export function ApprovalsPage() {
                         {(rem.safety_checks || []).map((check, idx) => (
                           <div
                             key={idx}
-                            className="p-3 rounded-xl bg-slate-50 dark:bg-[#141522] border border-gray-100 dark:border-white/[0.06] flex items-center justify-between text-[11px]"
+                            className="p-3 rounded-xl bg-slate-50 dark:bg-[#141522] border border-[#E5E5EA] dark:border-white/[0.07] flex items-center justify-between text-[11px]"
                           >
                             <span className="text-slate-700 dark:text-slate-300 font-medium truncate mr-2">{check.check}</span>
                             <span
@@ -360,14 +360,14 @@ export function ApprovalsPage() {
                   </div>
 
                   {/* Right Column: Actions */}
-                  <div className="w-full lg:w-48 flex-shrink-0 flex flex-col gap-3 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l lg:border-[#E5E5EA] dark:lg:border-white/[0.07] lg:pl-6">
+                  <div className="w-full lg:w-48 flex-shrink-0 flex flex-col gap-3 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l lg:border-gray-100 dark:lg:border-[#232D42] lg:pl-6">
                     <Button
                       variant="primary"
                       size="sm"
                       icon={CheckSquare}
                       disabled={isAnalyzing}
                       onClick={() => openApproveModal(rem)}
-                      className="w-full justify-center shadow-md shadow-purple-500/10"
+                      className="w-full justify-center shadow-md shadow-blue-500/10"
                     >
                       {isRevised ? 'Authorize Revised Plan' : 'Authorize Action'}
                     </Button>
@@ -397,7 +397,7 @@ export function ApprovalsPage() {
 
                     <Link
                       to={`/investigation?id=${rem.incident_id}`}
-                      className="text-xs text-[#7C3AED] dark:text-[#C4B5FD] hover:underline text-center w-full py-1.5 font-semibold block transition-colors"
+                      className="text-xs text-[#2563EB] dark:text-[#60A5FA] hover:underline text-center w-full py-1.5 font-semibold block transition-colors"
                     >
                       View AI Diagnosis →
                     </Link>
@@ -462,8 +462,8 @@ export function ApprovalsPage() {
                 </div>
 
                 {(rem.suggestion || (isChangesSuggested && rem.rejection_reason)) && (
-                  <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-[#1C2436] text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-2">
-                    <MessageSquare className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#60A5FA] flex-shrink-0 mt-0.5" />
+                  <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-white/[0.05] text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 text-[#7C3AED] dark:text-[#C4B5FD] flex-shrink-0 mt-0.5" />
                     <div>
                       <strong className="text-slate-800 dark:text-slate-200">Operator Feedback: </strong>
                       <span className="font-mono text-slate-700 dark:text-slate-300">
@@ -508,7 +508,7 @@ export function ApprovalsPage() {
           }
         >
           <div className="space-y-4 text-xs">
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-gray-200 dark:border-white/[0.08] text-gray-800 dark:text-slate-200">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0C0F17] border border-gray-200 dark:border-[#232D42] text-gray-800 dark:text-slate-200">
               <div className="font-bold flex items-center gap-1.5 mb-1 text-gray-900 dark:text-white">
                 <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                 Sign-off Notice
@@ -529,7 +529,7 @@ export function ApprovalsPage() {
                 onChange={(e) =>
                   setConfirmModal({ ...confirmModal, approver: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#141522] border border-gray-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white font-mono text-xs focus:outline-none focus:border-[#7C3AED]"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0C0F17] border border-gray-200 dark:border-[#232D42] rounded-xl text-slate-900 dark:text-white font-mono text-xs focus:outline-none focus:border-[#2563EB]"
               />
             </div>
 
@@ -543,7 +543,7 @@ export function ApprovalsPage() {
                 onChange={(e) =>
                   setConfirmModal({ ...confirmModal, notes: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#141522] border border-gray-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#7C3AED]"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0C0F17] border border-gray-200 dark:border-[#232D42] rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#2563EB]"
                 placeholder="State reason for sign-off..."
               />
             </div>
@@ -589,7 +589,7 @@ export function ApprovalsPage() {
         >
           <div className="space-y-4 text-xs">
             {/* Target context banner */}
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-gray-200 dark:border-white/[0.08] text-gray-800 dark:text-slate-200 flex items-start gap-2.5">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-[#E5E5EA] dark:border-white/[0.08] text-gray-800 dark:text-slate-200 flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <div className="font-bold text-gray-900 dark:text-white">
@@ -605,7 +605,7 @@ export function ApprovalsPage() {
             </div>
 
             {/* Question: "Do you have any suggestion?" */}
-            <div className="p-4 rounded-xl bg-white dark:bg-[#141522] border border-gray-200 dark:border-white/[0.08] shadow-2xs space-y-3">
+            <div className="p-4 rounded-xl bg-white dark:bg-[#141522] border border-[#E5E5EA] dark:border-white/[0.08] shadow-2xs space-y-3">
               <div className="flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-[#7C3AED] dark:text-[#C4B5FD] flex-shrink-0" />
                 <span className="font-bold text-sm text-gray-900 dark:text-white">
@@ -623,8 +623,8 @@ export function ApprovalsPage() {
                   onClick={() => setRejectModal((prev) => ({ ...prev, hasSuggestion: 'yes' }))}
                   className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                     rejectModal.hasSuggestion === 'yes'
-                      ? 'bg-[#7C3AED] text-white shadow-sm ring-2 ring-purple-500/30'
-                      : 'bg-slate-100 dark:bg-[#1B1C2E] text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-[#25273F]'
+                      ? 'bg-[#7C3AED] dark:bg-[#D8B4FE] text-white dark:text-[#0A0B10] shadow-sm ring-2 ring-purple-500/30'
+                      : 'bg-slate-100 dark:bg-[#07080D] text-slate-700 dark:text-slate-300 border border-[#E5E5EA] dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/[0.08]'
                   }`}
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -638,7 +638,7 @@ export function ApprovalsPage() {
                   className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                     rejectModal.hasSuggestion === 'no'
                       ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm ring-2 ring-slate-600/30'
-                      : 'bg-slate-100 dark:bg-[#1B1C2E] text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-[#25273F]'
+                      : 'bg-slate-100 dark:bg-[#07080D] text-slate-700 dark:text-slate-300 border border-[#E5E5EA] dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/[0.08]'
                   }`}
                 >
                   <X className="w-3.5 h-3.5" />
@@ -665,7 +665,7 @@ export function ApprovalsPage() {
                   onChange={(e) =>
                     setRejectModal((prev) => ({ ...prev, suggestion: e.target.value }))
                   }
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#141522] border border-gray-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#7C3AED] dark:focus:border-[#C4B5FD] placeholder-slate-400 dark:placeholder-slate-500"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#141522] border border-[#E5E5EA] dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:border-[#7C3AED] dark:focus:border-[#C4B5FD] placeholder-slate-400 dark:placeholder-slate-500"
                   placeholder="e.g. Recommend scaling pool size to 250 connections first and warming redis cache before restarting..."
                   autoFocus
                 />
@@ -674,7 +674,7 @@ export function ApprovalsPage() {
 
             {/* If No: Note */}
             {rejectModal.hasSuggestion === 'no' && (
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-gray-200 dark:border-white/[0.08] text-xs text-slate-600 dark:text-slate-400 animate-slide-up flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141522] border border-[#E5E5EA] dark:border-white/[0.08] text-xs text-slate-600 dark:text-slate-400 animate-slide-up flex items-center gap-2">
                 <Check className="w-4 h-4 text-[#059669] flex-shrink-0" />
                 <span>No suggestion will be sent. The request will be permanently rejected.</span>
               </div>
@@ -691,7 +691,7 @@ export function ApprovalsPage() {
                 onChange={(e) =>
                   setRejectModal((prev) => ({ ...prev, operator: e.target.value }))
                 }
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#141522] border border-gray-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white font-mono text-xs focus:outline-none focus:border-[#7C3AED]"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0C0F17] border border-gray-200 dark:border-[#232D42] rounded-xl text-slate-900 dark:text-white font-mono text-xs focus:outline-none focus:border-[#2563EB]"
               />
             </div>
           </div>

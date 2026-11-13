@@ -42,7 +42,7 @@ export function IncidentsPage() {
             placeholder="Search by ID, service, or keyword..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-[#111726] border border-gray-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#6C5CE7] transition-all shadow-soft"
+            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-[#141522] border border-[#E5E5EA] dark:border-white/[0.08] rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#A78BFA] transition-all shadow-2xs"
           />
         </div>
 
@@ -52,7 +52,7 @@ export function IncidentsPage() {
       </div>
 
       {/* Filter Tabs Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-[#111726] border border-gray-200 dark:border-slate-800 rounded-2xl shadow-soft text-xs transition-colors">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-[#0F1018] border border-[#E5E5EA] dark:border-white/[0.07] rounded-[20px] shadow-2xs text-xs transition-colors">
         {/* Severity */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-slate-400 dark:text-slate-400 font-medium mr-1 text-[11px]">Severity:</span>
@@ -60,10 +60,10 @@ export function IncidentsPage() {
             <button
               key={sev}
               onClick={() => setSeverityFilter(sev)}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 severityFilter === sev
-                  ? 'bg-[#6344F5] text-white shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800'
+                  ? 'bg-[#1D1D1F] dark:bg-[#D8B4FE] text-white dark:text-[#0A0B10] shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06]'
               }`}
             >
               {sev}
@@ -83,10 +83,10 @@ export function IncidentsPage() {
             <button
               key={st.id}
               onClick={() => setStatusFilter(st.id)}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 statusFilter === st.id
-                  ? 'bg-[#6344F5] text-white shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800'
+                  ? 'bg-[#1D1D1F] dark:bg-[#D8B4FE] text-white dark:text-[#0A0B10] shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/[0.06]'
               }`}
             >
               {st.label}
@@ -101,7 +101,7 @@ export function IncidentsPage() {
           return (
             <Card
               key={incident.incident_id}
-              className="p-4 transition-all bg-white dark:bg-[#111726] border border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700"
+              className="p-4 transition-all bg-white dark:bg-[#0F1018] border border-[#E5E5EA] dark:border-white/[0.07]"
               hover={true}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
